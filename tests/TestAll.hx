@@ -16,7 +16,7 @@ class TestAll {
 
         databaseBackend = Sys.getEnv("DB_CORE_BACKEND");
         if (databaseBackend == null) {
-            databaseBackend = "sqlite";
+            databaseBackend = "mysql";
         }
 
         trace("DB_CORE_BACKEND: " + databaseBackend);
@@ -26,7 +26,7 @@ class TestAll {
             trace("MYSQL_HOST: " + Sys.getEnv("MYSQL_HOST"));
             trace("MYSQL_USER: " + Sys.getEnv("MYSQL_USER"));
             trace("MYSQL_PASS: " + Sys.getEnv("MYSQL_PASS"));
-            
+
             addBasicCases(runner, mysql("basic"));
         }
 
