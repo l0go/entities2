@@ -239,7 +239,7 @@ class EntityBuilder {
             $b{[for (entityField in entityDefinition.primitiveFields()) {
                 macro {
                     if ($i{entityField.name} != null) {
-                        record.field($v{entityField.name}, $i{entityField.name});
+                        record.field($v{entityField.name}, entities.EntityManager.instance.convertPrimitiveToDB($i{entityField.name}, $v{entityField.type}));
                     }
                 }
             }]}
@@ -277,7 +277,7 @@ class EntityBuilder {
                         }
                         macro {
                             if (fieldSet.allow($v{entityField.name})) {
-                                $i{entityField.name} = record.field($v{entityField.name});
+                                $i{entityField.name} = entities.EntityManager.instance.convertPrimitiveFromDB(record.field($v{entityField.name}), $v{entityField.type});
                             }
                         }
                     }]}

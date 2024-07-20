@@ -184,6 +184,34 @@ class EntityManager {
         }
     }
 
+    private function convertPrimitiveToDB(value:Any, type:EntityFieldType):Any {
+        if (value == null) {
+            return value;
+        }
+        switch (type) {
+            case Boolean:
+                return value == true ? 1 : 0;
+            case Date:
+                return DateTools.format(value, "%Y-%m-%d %H:%M:%S"); 
+            case _:    
+        }
+        return value;
+    }
+
+    private function convertPrimitiveFromDB(value:Any, type:EntityFieldType):Any {
+        if (value == null) {
+            return value;
+        }
+        switch (type) {
+            case Boolean:
+                return value == 1;
+            case Date:
+                return Date.fromString(value);
+            case _:    
+        }
+        return value;
+    }
+
     private function reset():Promise<Bool> {
         return new Promise((resolve, reject) -> {
             disconnect().then(_ -> {

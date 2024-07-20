@@ -31,7 +31,7 @@ class TestBasic extends TestBase {
     }
 
     function testBasic_Primitives(async:Async) {
-        var entity1 = createEntity("this is a string value for entity #1", 123, 456.789, true, new Date(1, 2, 3, 4, 5, 6));
+        var entity1 = createEntity("this is a string value for entity #1", 123, 456.789, true, new Date(2000, 2, 3, 4, 5, 6));
 
         entity1.add().then(entity1 -> {
             Assert.equals(1, entity1.basicEntityId);
