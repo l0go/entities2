@@ -1,5 +1,6 @@
 package entities.macros;
 
+import haxe.macro.Context;
 #if macro
 
 import haxe.macro.Expr;
@@ -30,6 +31,29 @@ class EntityComplexTypeTools {
             case _:    
         }
         return null;
+    }
+
+    public static function primitiveEntityTypePath(field:EntityFieldDefinition):TypePath {
+        return primitiveEntityTypePathFromType(field.primitiveType);
+    }
+
+    public static function primitiveEntityTypePathFromType(type:String):TypePath {
+        var typePath:TypePath = null;
+        switch (type) {
+            case "Bool":
+                typePath = {name: "EntityBoolPrimitive", pack: ["entities", "primitives"]};
+            case "Int":
+                typePath = {name: "EntityIntPrimitive", pack: ["entities", "primitives"]};
+            case "Float":
+                typePath = {name: "EntityFloatPrimitive", pack: ["entities", "primitives"]};
+            case "String":
+                typePath = {name: "EntityStringPrimitive", pack: ["entities", "primitives"]};
+            case "Date":
+                typePath = {name: "EntityDatePrimitive", pack: ["entities", "primitives"]};
+            case _:
+                Context.error("unknown primitive type", Context.currentPos());
+        }
+        return typePath;
     }
 }
 

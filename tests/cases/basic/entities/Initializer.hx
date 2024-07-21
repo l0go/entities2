@@ -1,5 +1,10 @@
 package cases.basic.entities;
 
+import entities.primitives.EntityStringPrimitive;
+import entities.primitives.EntityBoolPrimitive;
+import entities.primitives.EntityIntPrimitive;
+import entities.primitives.EntityFloatPrimitive;
+import entities.primitives.EntityDatePrimitive;
 import sys.FileSystem;
 import db.IDatabase;
 import promises.Promise;
@@ -38,6 +43,11 @@ class Initializer {
         return new Promise((resolve, reject) -> @:privateAccess {
             EntityManager.instance.reset().then(_ -> {
                 BasicEntity._init = false;
+                EntityBoolPrimitive._init = false;
+                EntityIntPrimitive._init = false;
+                EntityFloatPrimitive._init = false;
+                EntityStringPrimitive._init = false;
+                EntityDatePrimitive._init = false;
                 try {
                     if (sqliteFilename != null && FileSystem.exists(sqliteFilename)) {
                         //FileSystem.deleteFile(sqliteFilename);

@@ -2,3 +2,4 @@ common-nodejs.hxml
 
 --js build/nodejs/test-all.js
 --cmd node build/nodejs/test-all.js
+--dce full

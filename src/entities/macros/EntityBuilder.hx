@@ -1,5 +1,6 @@
 package entities.macros;
 
+import haxe.macro.ComplexTypeTools;
 #if macro
 
 import haxe.macro.Context;
@@ -76,7 +77,42 @@ class EntityBuilder {
                             )
                         });
                     } else {
-                        trace(" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ", v.name + " is an primiteive array", valueComplexType);
+                        var primitiveType = null;
+                        switch (valueComplexType) {
+                            case (macro: Bool)  | (macro: Null<Bool>):
+                                primitiveType = "Bool";
+                            case (macro: Int)   | (macro: Null<Int>):    
+                                primitiveType = "Int";
+                            case (macro: Float) | (macro: Null<Float>):
+                                primitiveType = "Float";
+                            case (macro: String):
+                                primitiveType = "String";
+                            case (macro: Date):
+                                primitiveType = "Date";
+                            case _:
+                                trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", valueComplexType);
+                        }
+                        var valueComplexType = TPath(primitiveType.primitiveEntityTypePathFromType());
+                        var entityValueClass = new ClassBuilder(valueComplexType.toType());
+                        if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
+                            entityValueClass = entityClass;
+                        }
+                        var entityValueFullClassName = valueComplexType.toType().toString();
+                        entityDefinition.fields.push({
+                            name: fieldName,
+                            options: fieldOptions,
+                            type: EntityFieldType.Entity(
+                                entityValueClass.qualifiedName,
+                                EntityFieldRelationship.OneToMany(
+                                    entityClass.tableName(), entityClass.primaryKeyFieldName(),
+                                    entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
+                                ),
+                                EntityFieldType.Number
+                            ),
+                            primitive: true,
+                            primitiveType: primitiveType
+                        });
+                        entityClass.addVar("_" + fieldName + "Entities", macro: Array<$valueComplexType>, macro null, [APrivate]);
                     }
                 case (macro: Map<$keyComplexType, $valueComplexType>):
                 case (macro: $valueComplexType):
@@ -238,9 +274,7 @@ class EntityBuilder {
             var record = new db.Record();
             $b{[for (entityField in entityDefinition.primitiveFields()) {
                 macro {
-                    if ($i{entityField.name} != null) {
-                        record.field($v{entityField.name}, entities.EntityManager.instance.convertPrimitiveToDB($i{entityField.name}, $v{entityField.type}));
-                    }
+                    record.field($v{entityField.name}, entities.EntityManager.instance.convertPrimitiveToDB($i{entityField.name}, $v{entityField.type}));
                 }
             }]}
             $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
@@ -307,6 +341,10 @@ class EntityBuilder {
                     }]}
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                        var fieldName = entityField.name;
+                        if (entityField.primitive) {
+                            fieldName = entityField.primitiveEntityFieldName();
+                        }
                         var joinTableName = entityField.joinTableName();
                         var joinForeignKey = entityField.joinForeignKey();
                         var classDef = entityField.toClassDefExpr();
@@ -322,9 +360,26 @@ class EntityBuilder {
                                             return $p{classDef}.findInternal($p{classDef}.primaryKeysQuery(ids), queryCacheId, fieldSet);
                                         }).then(entities -> {
                                             if (entities != null) {
-                                                $i{entityField.name} = entities;
+                                                $i{fieldName} = entities;
+                                                ${if (entityField.primitive) {
+                                                    macro {
+                                                        $i{entityField.name} = [];
+                                                        for (item in entities) {
+                                                            $i{entityField.name}.push(item.value);
+                                                        }
+                                                    };
+                                                } else {
+                                                    macro null;
+                                                }}
                                             } else {
-                                                $i{entityField.name} = [];
+                                                $i{fieldName} = [];
+                                                ${if (entityField.primitive) {
+                                                    macro {
+                                                        $i{entityField.name} = [];
+                                                    };
+                                                } else {
+                                                    macro null;
+                                                }}
                                             }
                                             resolve(true);
                                         }, error -> {
@@ -380,10 +435,28 @@ class EntityBuilder {
                         }]}
                         // one to many
                         $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                            var fieldName = entityField.name;
+                            if (entityField.primitive) {
+                                fieldName = entityField.primitiveEntityFieldName();
+                            }
                             var foreignKey = entityField.foreignKey();
                             macro {
-                                if ($i{entityField.name} != null) {
-                                    for (item in $i{entityField.name}) {
+                                ${if (entityField.primitive) {
+                                    var primitiveEntityClassComplexType = entityField.primitiveEntityTypePath();
+                                    macro {
+                                        if ($i{entityField.name} != null) {
+                                            $i{fieldName} = [];
+                                            for (item in $i{entityField.name}) {
+                                                $i{fieldName}.push(new $primitiveEntityClassComplexType(item));
+                                            }
+                                        }
+                                    };
+                                } else {
+                                    macro null;
+                                }}
+
+                                if ($i{fieldName} != null) {
+                                    for (item in $i{fieldName}) {
                                         if (item.$foreignKey == null) {
                                             promiseList.push(item.add.bind(fieldSet));
                                         } else {
@@ -446,14 +519,18 @@ class EntityBuilder {
                     var promiseList = [];
 
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                        var fieldName = entityField.name;
+                        if (entityField.primitive) {
+                            fieldName = entityField.primitiveEntityFieldName();
+                        }
                         var joinForeignKey = entityField.joinForeignKey();
                         var foreignKey = entityField.foreignKey();
                         macro {
                             promiseList.push(() -> {
                                 return new promises.Promise((resolve, reject) -> {
                                     var joinRecords = new Array<db.Record>();
-                                    if ($i{entityField.name} != null) {
-                                        for (item in $i{entityField.name}) {
+                                    if ($i{fieldName} != null) {
+                                        for (item in $i{fieldName}) {
                                             var joinRecord = new db.Record();
                                             joinRecord.field($v{primaryKeyField}, $i{primaryKeyField});
                                             joinRecord.field($v{joinForeignKey}, item.$foreignKey);
@@ -510,9 +587,13 @@ class EntityBuilder {
                     }]}
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                        var fieldName = entityField.name;
+                        if (entityField.primitive) {
+                            fieldName = entityField.primitiveEntityFieldName();
+                        }
                         macro { // TODO: only if cascade deletions
-                            if ($i{entityField.name} != null) {
-                                for (item in $i{entityField.name}) {
+                            if ($i{fieldName} != null) {
+                                for (item in $i{fieldName}) {
                                     promiseList.push(item.delete.bind(fieldSet));
                                 }
                             }
@@ -571,13 +652,16 @@ class EntityBuilder {
                     var promiseList:Array<() -> promises.Promise<Any>> = [];
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
-                        var entityFieldName = entityField.name;
+                        var fieldName = entityField.name;
+                        if (entityField.primitive) {
+                            fieldName = entityField.primitiveEntityFieldName();
+                        }
                         var foreignKey = entityField.foreignKey();
                         var joinForeignKey = entityField.joinForeignKey();
                         var joinTableName = entityField.joinTableName();
                         macro {
-                            if ($i{entityField.name} != null) {
-                                var idsInDB = entityInDB.$entityFieldName.map(item -> item.$foreignKey);
+                            if ($i{fieldName} != null) {
+                                var idsInDB = entityInDB.$fieldName.map(item -> item.$foreignKey);
                                 if (idsInDB.length > 0) {
                                     var query = Query.query(Query.field($v{joinForeignKey}) in idsInDB);
                                     promiseList.push(entities.EntityManager.instance.deleteAll.bind($v{joinTableName}, query));
@@ -658,10 +742,37 @@ class EntityBuilder {
                         }]}
                         // one to many
                         $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                            var fieldName = entityField.name;
+                            if (entityField.primitive) {
+                                fieldName = entityField.primitiveEntityFieldName();
+                            }
                             var foreignKey = entityField.foreignKey();
                             macro {
-                                if ($i{entityField.name} != null) {
-                                    for (item in $i{entityField.name}) {
+                                ${if (entityField.primitive) {
+                                    var primitiveEntityClassComplexType = entityField.primitiveEntityTypePath();
+                                    macro {
+                                        if ($i{entityField.name} != null) {
+                                            if ($i{fieldName} == null) {
+                                                $i{fieldName} = [];
+                                            }
+                                            while ($i{fieldName}.length > $i{entityField.name}.length) {
+                                                $i{fieldName}.pop();
+                                            }
+                                            while ($i{fieldName}.length != $i{entityField.name}.length) {
+                                                $i{fieldName}.push(new $primitiveEntityClassComplexType());
+                                            }
+                                            //var diff1 
+                                            for (i in 0...$i{entityField.name}.length) {
+                                                $i{fieldName}[i].value = $i{entityField.name}[i];
+                                            }
+                                        }
+                                    };
+                                } else {
+                                    macro null;
+                                }}
+
+                                if ($i{fieldName} != null) {
+                                    for (item in $i{fieldName}) {
                                         if (item.$foreignKey == null) {
                                             promiseList.push(item.add.bind(fieldSet));
                                         } else {
@@ -725,16 +836,19 @@ class EntityBuilder {
                     var promiseList:Array<() -> promises.Promise<Any>> = [];
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
-                        var entityFieldName = entityField.name;
+                        var fieldName = entityField.name;
+                        if (entityField.primitive) {
+                            fieldName = entityField.primitiveEntityFieldName();
+                        }
                         var foreignKey = entityField.foreignKey();
                         var classDef = entityField.toClassDefExpr();
                         var joinTableName = entityField.joinTableName();
                         var joinForeignKey = entityField.joinForeignKey();
                         macro {
-                            if ($i{entityField.name} != null) {
+                            if ($i{fieldName} != null) {
                                 var diff = entities.EntityManager.instance.diffIds(
-                                    entityInDB.$entityFieldName.map(item -> item.$foreignKey),
-                                    this.$entityFieldName.map(item -> item.$foreignKey)
+                                    entityInDB.$fieldName.map(item -> item.$foreignKey),
+                                    this.$fieldName.map(item -> item.$foreignKey)
                                 );
 
                                 if (diff.idsToRemove.length > 0) {

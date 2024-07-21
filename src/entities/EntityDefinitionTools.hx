@@ -147,6 +147,10 @@ class EntityDefinitionTools {
         return tableSchema;
     }
 
+    public static function primitiveEntityFieldName(field:EntityFieldDefinition):String {
+        return "_" + field.name + "Entities";
+    }
+
     public static function foreignKey(field:EntityFieldDefinition):String {
         var key = null;
         switch (field.type) {
