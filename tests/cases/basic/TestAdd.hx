@@ -6,6 +6,7 @@ import cases.basic.entities.Initializer;
 import utest.Async;
 import db.IDatabase;
 
+@:timeout(10000)
 class TestAdd extends TestBase {
     private var db:IDatabase;
 
