@@ -195,6 +195,10 @@ class EntityDefinitionTools {
         return key;
     }
 
+    public static function cascadeDeletions(field:EntityFieldDefinition):Bool {
+        return field.options.contains(CascadeDeletions);
+    }
+
     public static function toColumnType(type:EntityFieldType):ColumnType {
         return switch (type) {
             case EntityFieldType.Boolean:       ColumnType.Boolean;

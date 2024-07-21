@@ -97,6 +97,10 @@ class EntityBuilder {
                         if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
                             entityValueClass = entityClass;
                         }
+                        // primitive arrays should cascade deletions _always_
+                        if (!fieldOptions.contains(EntityFieldOption.CascadeDeletions)) {
+                            fieldOptions.push(EntityFieldOption.CascadeDeletions);
+                        }
                         var entityValueFullClassName = valueComplexType.toType().toString();
                         entityDefinition.fields.push({
                             name: fieldName,
@@ -579,7 +583,11 @@ class EntityBuilder {
                     var promiseList:Array<() -> promises.Promise<Any>> = [];
                     // one to one
                     $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
-                        macro { // TODO: only if cascade deletions
+                        var cascadeDeletions = entityField.cascadeDeletions();
+                        if (!cascadeDeletions) {
+                            continue;
+                        }
+                        macro {
                             if ($i{entityField.name} != null) {
                                 promiseList.push($i{entityField.name}.delete.bind(fieldSet));
                             }
@@ -587,11 +595,15 @@ class EntityBuilder {
                     }]}
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                        var cascadeDeletions = entityField.cascadeDeletions();
+                        if (!cascadeDeletions) {
+                            continue;
+                        }
                         var fieldName = entityField.name;
                         if (entityField.primitive) {
                             fieldName = entityField.primitiveEntityFieldName();
                         }
-                        macro { // TODO: only if cascade deletions
+                        macro {
                             if ($i{fieldName} != null) {
                                 for (item in $i{fieldName}) {
                                     promiseList.push(item.delete.bind(fieldSet));
@@ -836,6 +848,7 @@ class EntityBuilder {
                     var promiseList:Array<() -> promises.Promise<Any>> = [];
                     // one to many
                     $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                        var cascadeDeletions = entityField.cascadeDeletions();
                         var fieldName = entityField.name;
                         if (entityField.primitive) {
                             fieldName = entityField.primitiveEntityFieldName();
@@ -853,7 +866,9 @@ class EntityBuilder {
 
                                 if (diff.idsToRemove.length > 0) {
                                     for (id in diff.idsToRemove) {
-                                        promiseList.push($p{classDef}.deleteById.bind(id));  // TODO: if cascade deletions
+                                        if ($v{cascadeDeletions}) {
+                                            promiseList.push($p{classDef}.deleteById.bind(id));
+                                        }
                                         // we always want to delete the joins
                                         var query = Query.query(Query.field($v{joinForeignKey}) in diff.idsToRemove);
                                         promiseList.push(entities.EntityManager.instance.deleteAll.bind($v{joinTableName}, query));

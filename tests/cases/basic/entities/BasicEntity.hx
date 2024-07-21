@@ -12,9 +12,17 @@ class BasicEntity implements IEntity {
 
     public var entity1:BasicEntity = null;
     public var entity2:BasicEntity = null;
+    @:cascade(deletions)
+    public var entity3:BasicEntity = null;
+    @:cascade(deletions)
+    public var entity4:BasicEntity = null;
 
     public var entitiesArray1:Array<BasicEntity> = [];
     public var entitiesArray2:Array<BasicEntity> = [];
+    @:cascade(deletions)
+    public var entitiesArray3:Array<BasicEntity> = [];
+    @:cascade(deletions)
+    public var entitiesArray4:Array<BasicEntity> = [];
 
     public var stringArray1:Array<String> = [];
     public var stringArray2:Array<String> = [];

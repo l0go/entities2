@@ -37,6 +37,7 @@ class TestAll {
     private static function addBasicCases(runner:Runner, db:IDatabase) {
         runner.addCase(new TestBasic(db));
         runner.addCase(new TestAdd(db));
+        runner.addCase(new TestDelete(db));
     }
 
     private static function sqlite(name:String):IDatabase {
