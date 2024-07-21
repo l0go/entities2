@@ -38,4 +38,9 @@ class BasicEntity implements IEntity {
 
     public var dateArray1:Array<Date> = [];
     public var dateArray2:Array<Date> = [];
+
+    @:size(20, truncate)
+    public var limitedStringValue:String;
+    @:size(20)
+    public var limitedStringValueNoTruncate:String;
 }

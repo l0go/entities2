@@ -5,7 +5,7 @@ enum EntityFieldType {
     Boolean;
     Number;
     Decimal;
-    Text;
+    Text(size:Int);
     Date;
     Binary;
     Entity(className:String, relationship:EntityFieldRelationship, type:EntityFieldType);

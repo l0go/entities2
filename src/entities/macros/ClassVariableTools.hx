@@ -10,6 +10,7 @@ class ClassVariableTools {
     }
 
     public static function toEntityFieldType(classVariable:ClassVariable, defaultValue = EntityFieldType.Number):EntityFieldType {
+        var size = classVariable.metadata.paramAsInt(EntityMetadata.Size);
         switch (classVariable.complexType) {
             case TPath(p):
                 if (p.name == "StdTypes" && p.params.length == 1) {
@@ -17,14 +18,14 @@ class ClassVariableTools {
                         case TPType(t):
                             switch (t) {
                                 case TPath(p):
-                                    return haxeTypeStringToEntityFieldType(p.sub, defaultValue);
+                                    return haxeTypeStringToEntityFieldType(p.sub, defaultValue, size);
                                 case _:    
                             }
                         case _:    
                     }
                     return defaultValue;
                 }
-                return haxeTypeStringToEntityFieldType(p.name, defaultValue);
+                return haxeTypeStringToEntityFieldType(p.name, defaultValue, size);
             case _:
         }
         return defaultValue;
@@ -44,7 +45,11 @@ class ClassVariableTools {
         return fieldOptions;
     }
 
-    static function haxeTypeStringToEntityFieldType(s:String, defaultValue = EntityFieldType.Number) {
+    static function haxeTypeStringToEntityFieldType(s:String, defaultValue = EntityFieldType.Number, size:Null<Int> = null) {
+        if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
+            size = EntityManager.DefaultFieldSize;
+        }
+
         switch (s) {
             case "Bool":
                 return EntityFieldType.Number;
@@ -53,7 +58,7 @@ class ClassVariableTools {
             case "Float":
                 return EntityFieldType.Decimal;
             case "String":
-                return EntityFieldType.Text;
+                return EntityFieldType.Text(size);
             case "Date":
                 return EntityFieldType.Date;
             case "haxe.io.Bytes":

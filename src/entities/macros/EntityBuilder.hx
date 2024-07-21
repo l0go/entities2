@@ -54,7 +54,17 @@ class EntityBuilder {
                 case (macro: Float) | (macro: Null<Float>):
                     entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
                 case (macro: String):
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text });
+                    var size = v.metadata.paramAsInt(EntityMetadata.Size);
+                    if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
+                        size = EntityManager.DefaultFieldSize;
+                    }
+                    var sizeTruncateString = v.metadata.paramAsString("size", 1);
+                    if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.Truncate && !fieldOptions.contains(EntityFieldOption.TruncateToSize)) {
+                        fieldOptions.push(EntityFieldOption.TruncateToSize);
+                    } else if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.NoTruncate) {
+                        fieldOptions.remove(EntityFieldOption.TruncateToSize);
+                    }
+                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text(size) });
                 case (macro: Date):
                     entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Date });
                 case (macro: Array<$valueComplexType>):
@@ -203,7 +213,7 @@ class EntityBuilder {
         var associationTableSchemas = [];
         for (field in entityDefinition.fields) {
             switch (field.type) {
-                case Unknown | Boolean | Number | Decimal | Text | Date | Binary:
+                case Unknown | Boolean | Number | Decimal | Text(_) | Date | Binary:
                     // do nothing, dont want to use "case _:" so future enum additions will be flagged and handled explicitly
                 case Entity(className, relationship, type):
                     switch (relationship) {
@@ -276,7 +286,7 @@ class EntityBuilder {
             var record = new db.Record();
             $b{[for (entityField in entityDefinition.primitiveFields()) {
                 macro {
-                    record.field($v{entityField.name}, entities.EntityManager.instance.convertPrimitiveToDB($i{entityField.name}, $v{entityField.type}));
+                    record.field($v{entityField.name}, entities.EntityManager.instance.convertPrimitiveToDB($i{entityField.name}, $v{entityField.type}, $v{entityField.options}));
                 }
             }]}
             $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {

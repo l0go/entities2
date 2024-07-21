@@ -34,7 +34,7 @@ class EntityDefinitionTools {
         for (f in entityDefinition.fields) {
             switch (f.type) {
                 case Unknown:
-                case Boolean | Number | Decimal | Text | Date | Binary:
+                case Boolean | Number | Decimal | Text(_) | Date | Binary:
                     fields.push(f);
                 case Entity(_, _, _):
             }
@@ -78,7 +78,7 @@ class EntityDefinitionTools {
         for (f in entityDefinition.fields) {
             switch (f.type) {
                 case Unknown:
-                case Boolean | Number | Decimal | Text | Date | Binary:
+                case Boolean | Number | Decimal | Text(_) | Date | Binary:
                     callback(f);
                 case Entity(_, _, _):
             }
@@ -121,7 +121,7 @@ class EntityDefinitionTools {
 
         for (entityField in entityDefinition.fields) {
             switch (entityField.type) {
-                case Boolean | Number | Decimal | Text | Date | Binary:
+                case Boolean | Number | Decimal | Text(_) | Date | Binary:
                     tableSchema.columns.push({
                         name: entityField.name,
                         type: toColumnType(entityField.type),
@@ -202,8 +202,8 @@ class EntityDefinitionTools {
             case EntityFieldType.Boolean:       ColumnType.Boolean;
             case EntityFieldType.Number:        ColumnType.Number;
             case EntityFieldType.Decimal:       ColumnType.Decimal;
-            case EntityFieldType.Text:          ColumnType.Memo; // TODO: too big?
-            case EntityFieldType.Date:          ColumnType.Text(255); // TODO: too big?
+            case EntityFieldType.Text(size):    size == -1 ? ColumnType.Memo : ColumnType.Text(size);
+            case EntityFieldType.Date:          ColumnType.Text(20);
             case EntityFieldType.Binary:        ColumnType.Binary;
             case _:    
                 trace("unknown", type);

@@ -11,6 +11,8 @@ import db.TableSchema;
 import db.IDatabase;
 
 class EntityManager {
+    public static var DefaultFieldSize:Int = -1;
+
     private static var _instance:EntityManager = null;
     public static var instance(get, null):EntityManager;
     private static function get_instance():EntityManager {
@@ -184,7 +186,7 @@ class EntityManager {
         }
     }
 
-    private function convertPrimitiveToDB(value:Any, type:EntityFieldType):Any {
+    private function convertPrimitiveToDB(value:Any, type:EntityFieldType, options:Array<EntityFieldOption>):Any {
         if (value == null) {
             return value;
         }
@@ -193,6 +195,11 @@ class EntityManager {
                 return value == true ? 1 : 0;
             case Date:
                 return DateTools.format(value, "%Y-%m-%d %H:%M:%S"); 
+            case Text(size):
+                var s:String = value;
+                if (options.contains(EntityFieldOption.TruncateToSize) && s.length > size) {
+                    return s.substring(0, size);
+                }
             case _:    
         }
         return value;

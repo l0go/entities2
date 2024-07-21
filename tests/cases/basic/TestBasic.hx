@@ -510,6 +510,49 @@ class TestBasic extends TestBase {
         });
     }
 
+    function testBasic_Size_String(async:Async) {
+        var mainEntity = createEntity("mainEntity", 111);
+        mainEntity.limitedStringValue = "this string is over the 20 char limit for the field";
+
+        mainEntity.add().then(mainEntity -> {
+            Assert.equals("mainEntity", mainEntity.stringValue);
+            Assert.equals(111, mainEntity.intValue);
+            
+            return BasicEntity.findById(mainEntity.basicEntityId);
+        }).then(entity -> {
+            Assert.equals("mainEntity", entity.stringValue);
+            Assert.equals(111, entity.intValue);
+            Assert.equals("this string is over ", entity.limitedStringValue);
+
+            entity.limitedStringValue = "123456789012345678901234567890";
+            return entity.update();
+        }).then(entity -> {
+            return BasicEntity.findById(entity.basicEntityId);
+        }).then(entity -> {
+            Assert.equals("mainEntity", entity.stringValue);
+            Assert.equals(111, entity.intValue);
+            Assert.equals("12345678901234567890", entity.limitedStringValue);
+
+            async.done();
+        }, error -> {
+            trace("ERROR", error);
+        });
+    }
+
+    function testBasic_Size_String_NoTruncate(async:Async) {
+        var mainEntity = createEntity("mainEntity", 111);
+        mainEntity.limitedStringValueNoTruncate = "this string is over the 20 char limit for the field";
+
+        mainEntity.add().then(mainEntity -> {
+            Assert.fail("db should throw an error about the size constraint");
+            async.done();
+        }, error -> {
+            Assert.pass();
+            async.done();
+            trace("ERROR", error);
+        });
+    }
+
     public static function createEntity(stringValue:String, intValue:Null<Int> = null, floatValue:Null<Float> = null, boolValue:Null<Bool> = null, dateValue:Date = null, entity1:BasicEntity = null, entity2:BasicEntity = null, entitiesArray1:Array<BasicEntity> = null, entitiesArray2:Array<BasicEntity> = null) {
         var entity = new BasicEntity();
         entity.stringValue = stringValue;

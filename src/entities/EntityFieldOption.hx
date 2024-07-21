@@ -4,4 +4,5 @@ enum EntityFieldOption {
     PrimaryKey;
     AutoIncrement;
     CascadeDeletions;
+    TruncateToSize;
 }
