@@ -38,6 +38,7 @@ class TestAll {
         runner.addCase(new TestBasic(db));
         runner.addCase(new TestAdd(db));
         runner.addCase(new TestDelete(db));
+        runner.addCase(new TestFieldSets_Blacklist_Basic(db));
     }
 
     private static function sqlite(name:String):IDatabase {

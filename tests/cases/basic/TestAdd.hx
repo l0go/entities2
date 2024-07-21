@@ -2,9 +2,9 @@ package cases.basic;
 
 import cases.basic.entities.BasicEntity;
 import utest.Assert;
-import cases.basic.entities.Initializer;
 import utest.Async;
 import db.IDatabase;
+import cases.basic.entities.Initializer.*;
 
 @:timeout(10000)
 class TestAdd extends TestBase {
@@ -19,14 +19,14 @@ class TestAdd extends TestBase {
         logging.LogManager.instance.addAdaptor(new logging.adaptors.ConsoleLogAdaptor({
             levels: [logging.LogLevel.Info, logging.LogLevel.Error]
         }));
-        new Initializer().run(db).then(_ -> {
+        setupEntities(db).then(_ -> {
             async.done();
         });
     }
 
     function teardown(async:Async) {
         logging.LogManager.instance.clearAdaptors();
-        new Initializer().cleanUp(db).then(_ -> {
+        teardownEntities(db).then(_ -> {
             async.done();
         });
     }
@@ -108,19 +108,5 @@ class TestAdd extends TestBase {
         }, error -> {
             trace("ERROR", error);
         });
-    }
-
-    public static function createEntity(stringValue:String, intValue:Null<Int> = null, floatValue:Null<Float> = null, boolValue:Null<Bool> = null, dateValue:Date = null, entity1:BasicEntity = null, entity2:BasicEntity = null, entitiesArray1:Array<BasicEntity> = null, entitiesArray2:Array<BasicEntity> = null) {
-        var entity = new BasicEntity();
-        entity.stringValue = stringValue;
-        entity.intValue = intValue;
-        entity.floatValue = floatValue;
-        entity.boolValue = boolValue;
-        entity.dateValue = dateValue;
-        entity.entity1 = entity1;
-        entity.entity2 = entity2;
-        entity.entitiesArray1 = entitiesArray1;
-        entity.entitiesArray2 = entitiesArray2;
-        return entity;
     }
 }

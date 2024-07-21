@@ -92,6 +92,20 @@ class MetadataWrapper {
         return v == "true";
     }
 
+    public function list(name:String = null):Array<MetadataEntry> {
+        var items = [];
+        for (m in asArray()) {
+            if (name != null) {
+                if (m.name == name || m.name == ":" + name) {
+                    items.push(m);
+                }
+            } else {
+                items.push(m);
+            }
+        }
+        return items;
+    }
+
     private function asArray():Metadata {
         if (metadata != null) {
             return metadata;

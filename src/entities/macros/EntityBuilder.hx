@@ -1,5 +1,6 @@
 package entities.macros;
 
+import haxe.macro.ExprTools;
 import haxe.macro.ComplexTypeTools;
 #if macro
 
@@ -158,6 +159,7 @@ class EntityBuilder {
         buildTableSchemaFields(entityClass, entityDefinition);
         buildInit(entityClass, entityDefinition);
         buildCheckTables(entityClass, entityDefinition);
+        buildFieldSets(entityClass, entityDefinition);
 
         buildToRecord(entityClass, entityDefinition);
         buildFromRecord(entityClass, entityDefinition);
@@ -271,6 +273,24 @@ class EntityBuilder {
                     reject(error);
                 });
             });
+        }
+    }
+
+    public static function buildFieldSets(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var fieldSetsMetaList = entityClass.metadata.list("fieldset");
+        for (item in fieldSetsMetaList) {
+            var finalValues:Array<String> = [];
+            var name = ExprTools.toString(item.params[0]);
+            var values = item.params[1];
+            switch (values.expr) {
+                case EArrayDecl(values):
+                    for (value in values) {
+                        finalValues.push(ExprTools.toString(value));
+                    }
+                case _:    
+            }
+
+            entityClass.addStaticVar(name, macro: entities.EntityFieldSet, macro new entities.EntityFieldSet($v{finalValues}), [AFinal]);
         }
     }
 

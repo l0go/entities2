@@ -15,12 +15,12 @@ import sys.io.File;
 import haxe.Json;
 
 class Initializer {
-    public var sqliteFilename:String = "basic.db";
+    public static var sqliteFilename:String = "basic.db";
 
     public function new() {
     }
 
-    public function run(db:IDatabase):Promise<Bool> {
+    public static function setupEntities(db:IDatabase):Promise<Bool> {
         return new Promise((resolve, reject) -> @:privateAccess {
             if ((db is SqliteDatabase) && sqliteFilename != null) {
                 File.saveContent(sqliteFilename, "");
@@ -51,7 +51,7 @@ class Initializer {
         });
     }
 
-    public function cleanUp(db:IDatabase):Promise<Bool> {
+    public static function teardownEntities(db:IDatabase):Promise<Bool> {
         return new Promise((resolve, reject) -> @:privateAccess {
             EntityManager.instance.reset().then(_ -> {
                 BasicEntity._init = false;
@@ -73,5 +73,20 @@ class Initializer {
                 trace("ERROR", error);
             });
         });
+    }
+
+
+    public static function createEntity(stringValue:String, intValue:Null<Int> = null, floatValue:Null<Float> = null, boolValue:Null<Bool> = null, dateValue:Date = null, entity1:BasicEntity = null, entity2:BasicEntity = null, entitiesArray1:Array<BasicEntity> = null, entitiesArray2:Array<BasicEntity> = null) {
+        var entity = new BasicEntity();
+        entity.stringValue = stringValue;
+        entity.intValue = intValue;
+        entity.floatValue = floatValue;
+        entity.boolValue = boolValue;
+        entity.dateValue = dateValue;
+        entity.entity1 = entity1;
+        entity.entity2 = entity2;
+        entity.entitiesArray1 = entitiesArray1;
+        entity.entitiesArray2 = entitiesArray2;
+        return entity;
     }
 }

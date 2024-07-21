@@ -2,6 +2,11 @@ package cases.basic.entities;
 
 import entities.IEntity;
 
+@:fieldset(OnlyStringPrimitives, [stringValue])
+@:fieldset(NoEntities, [!entity1, !entity2, !entity3, !entity4])
+@:fieldset(NoEntityArrays, [!entitiesArray1, !entitiesArray2, !entitiesArray3, !entitiesArray4])
+@:fieldset(OnlyStringPrimitiveArrays, [stringArray1, stringArray2])
+@:fieldset(NoStringValue, [!stringValue])
 @:exposeId
 class BasicEntity implements IEntity {
     public var stringValue:String;
