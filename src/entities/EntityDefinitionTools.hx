@@ -37,7 +37,6 @@ class EntityDefinitionTools {
                 case Boolean | Number | Decimal | Text | Date | Binary:
                     fields.push(f);
                 case Entity(_, _, _):
-                case Array(_):    
             }
         }
         return fields;
@@ -82,7 +81,6 @@ class EntityDefinitionTools {
                 case Boolean | Number | Decimal | Text | Date | Binary:
                     callback(f);
                 case Entity(_, _, _):
-                case Array(_):    
             }
         }
     }

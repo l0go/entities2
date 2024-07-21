@@ -8,6 +8,5 @@ enum EntityFieldType {
     Text;
     Date;
     Binary;
-    Array(type:EntityFieldType);
     Entity(className:String, relationship:EntityFieldRelationship, type:EntityFieldType);
 }

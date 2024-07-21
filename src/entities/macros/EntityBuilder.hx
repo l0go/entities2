@@ -205,8 +205,6 @@ class EntityBuilder {
             switch (field.type) {
                 case Unknown | Boolean | Number | Decimal | Text | Date | Binary:
                     // do nothing, dont want to use "case _:" so future enum additions will be flagged and handled explicitly
-                case Array(type):
-                    // TODO: will need association table
                 case Entity(className, relationship, type):
                     switch (relationship) {
                         case OneToOne(table1, field1, table2, field2):
