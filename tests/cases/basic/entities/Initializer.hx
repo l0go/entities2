@@ -1,5 +1,6 @@
 package cases.basic.entities;
 
+import promises.PromiseUtils;
 import entities.primitives.EntityStringPrimitive;
 import entities.primitives.EntityBoolPrimitive;
 import entities.primitives.EntityIntPrimitive;
@@ -20,16 +21,27 @@ class Initializer {
     }
 
     public function run(db:IDatabase):Promise<Bool> {
-        return new Promise((resolve, reject) -> {
+        return new Promise((resolve, reject) -> @:privateAccess {
             if ((db is SqliteDatabase) && sqliteFilename != null) {
                 File.saveContent(sqliteFilename, "");
             }
+
+            var promises = [];
+            // pre-init'ing just makes the timings more like what they would be in the real world
+            promises.push(BasicEntity.init.bind());
+            promises.push(EntityBoolPrimitive.init.bind());
+            promises.push(EntityIntPrimitive.init.bind());
+            promises.push(EntityFloatPrimitive.init.bind());
+            promises.push(EntityStringPrimitive.init.bind());
+            promises.push(EntityDatePrimitive.init.bind());
 
             EntityManager.instance.database = db;
             @:privateAccess EntityManager.instance.connect().then(_ -> {
                 return db.delete();
             }).then(_ -> {
                 return db.create();
+            }).then(_ -> {
+                PromiseUtils.runSequentially(promises);
             }).then(_ -> {
                 resolve(true);
             }, error -> {

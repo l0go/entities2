@@ -33,15 +33,23 @@ class TestBasic extends TestBase {
     function testBasic_Primitives(async:Async) {
         var entity1 = createEntity("this is a string value for entity #1", 123, 456.789, true, new Date(2000, 2, 3, 4, 5, 6));
 
+        profileStart("testBasic_Primitives");
+        measureStart("add()");
         entity1.add().then(entity -> {
+            measureEnd("add()");
+
             Assert.equals(1, entity.basicEntityId);
             Assert.equals("this is a string value for entity #1", entity.stringValue);
             Assert.equals(123, entity.intValue);
             Assert.equals(456.789, entity.floatValue);
             Assert.equals(true, entity.boolValue);
             Assert.equals(new Date(2000, 2, 3, 4, 5, 6).toString(), entity1.dateValue.toString());
+
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
+
             Assert.equals(1, entity.basicEntityId);
             Assert.equals("this is a string value for entity #1", entity.stringValue);
             Assert.equals(123, entity.intValue);
@@ -55,8 +63,10 @@ class TestBasic extends TestBase {
             entity.boolValue = !entity.boolValue;
             entity.dateValue = new Date(2001, 3, 4, 5, 6, 7);
 
+            measureStart("update()");
             return entity.update();
         }).then(entity -> {
+            measureEnd("update()");
             Assert.equals(1, entity.basicEntityId);
             Assert.equals("this is a string value for entity #1 - addition", entity.stringValue);
             Assert.equals(246, entity.intValue);
@@ -64,8 +74,10 @@ class TestBasic extends TestBase {
             Assert.equals(false, entity.boolValue);
             Assert.equals(new Date(2001, 3, 4, 5, 6, 7).toString(), entity.dateValue.toString());
 
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals(1, entity.basicEntityId);
             Assert.equals("this is a string value for entity #1 - addition", entity.stringValue);
             Assert.equals(246, entity.intValue);
@@ -73,6 +85,7 @@ class TestBasic extends TestBase {
             Assert.equals(false, entity.boolValue);
 
             Assert.equals(new Date(2001, 3, 4, 5, 6, 7).toString(), entity.dateValue.toString());
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
