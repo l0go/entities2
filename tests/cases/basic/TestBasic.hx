@@ -1,5 +1,6 @@
 package cases.basic;
 
+import entities.EntityManager;
 import cases.basic.entities.BasicEntity;
 import utest.Assert;
 import utest.Async;
@@ -591,6 +592,47 @@ class TestBasic extends TestBase {
         }, error -> {
             Assert.pass();
             async.done();
+        });
+    }
+
+    function testBasic_QueryCache(async:Async) {        
+        var mainEntity = createEntity("mainEntity");
+        var entity1 = createEntity("entity1");
+        var entity2 = createEntity("entity2");
+        mainEntity.entity1 = entity1;
+        mainEntity.entity2 = entity2;
+        mainEntity.entity3 = entity1;
+        mainEntity.entity4 = entity2;
+        mainEntity.entitiesArray1 = [entity1, entity2];
+        mainEntity.entitiesArray2 = [entity1, entity2];
+        mainEntity.entitiesArray3 = [entity1, entity2];
+        mainEntity.entitiesArray4 = [entity1, entity2];
+
+        profileStart("testBasic_QueryCache");
+        mainEntity.add().then(mainEntity -> {
+            Assert.equals("mainEntity", mainEntity.stringValue);
+            measureStart("findById()");
+            return BasicEntity.findById(mainEntity.basicEntityId);
+        }).then(entity -> {
+            measureEnd("findById()");
+            Assert.equals("mainEntity", mainEntity.stringValue);
+            Assert.equals("entity1", mainEntity.entity1.stringValue);
+            Assert.equals("entity2", mainEntity.entity2.stringValue);
+            Assert.equals("entity1", mainEntity.entity3.stringValue);
+            Assert.equals("entity2", mainEntity.entity4.stringValue);
+            Assert.equals("entity1", mainEntity.entitiesArray1[0].stringValue);
+            Assert.equals("entity2", mainEntity.entitiesArray1[1].stringValue);
+            Assert.equals("entity1", mainEntity.entitiesArray2[0].stringValue);
+            Assert.equals("entity2", mainEntity.entitiesArray2[1].stringValue);
+            Assert.equals("entity1", mainEntity.entitiesArray3[0].stringValue);
+            Assert.equals("entity2", mainEntity.entitiesArray3[1].stringValue);
+            Assert.equals("entity1", mainEntity.entitiesArray4[0].stringValue);
+            Assert.equals("entity2", mainEntity.entitiesArray4[1].stringValue);
+            Assert.equals(145, @:privateAccess EntityManager.instance._queryCacheHitCount); // is 145 too specific?
+            profileEnd();
+            async.done();
+        }, error -> {
+            trace("ERROR", error);
         });
     }
 }

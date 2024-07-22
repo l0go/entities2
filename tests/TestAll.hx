@@ -32,6 +32,9 @@ class TestAll {
 
         Report.create(runner, SuccessResultsDisplayMode.AlwaysShowSuccessResults, HeaderDisplayMode.NeverShowHeader);
         runner.run();
+        runner.onComplete.add((runner) -> {
+            TestBase.displayCounts();
+        });
     }
 
     private static function addBasicCases(runner:Runner, db:IDatabase) {

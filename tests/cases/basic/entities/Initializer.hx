@@ -35,6 +35,7 @@ class Initializer {
             promises.push(EntityStringPrimitive.init.bind());
             promises.push(EntityDatePrimitive.init.bind());
 
+            EntityManager.instance._queryCacheHitCount = 0;
             EntityManager.instance.database = db;
             @:privateAccess EntityManager.instance.connect().then(_ -> {
                 return db.delete();

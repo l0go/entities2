@@ -974,9 +974,11 @@ class EntityBuilder {
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
                     return findInternal(primaryKeyQuery(id), queryCacheId, fieldSet);
-                }).then(entities -> {
-                    resolve(entities[0]);
+                }).then(entitiesList -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    resolve(entitiesList[0]);
                 }, error -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     reject(error);
                 });
             });

@@ -10,6 +10,8 @@ import promises.Promise;
 import db.TableSchema;
 import db.IDatabase;
 
+using StringTools;
+
 class EntityManager {
     public static var DefaultFieldSize:Int = -1;
 
@@ -68,13 +70,6 @@ class EntityManager {
         });
     }
 
-    private var _nextQueryCacheId:Float = 1;
-    private function generateQueryCachedId():String {
-        var id = _nextQueryCacheId;
-        _nextQueryCacheId++;
-        return Std.string(id);
-    }
-
     private var _tableCache:Map<String, ITable> = [];
     private function lookupTable(tableName:String):Promise<ITable> {
         return new Promise((resolve, reject) -> {
@@ -127,15 +122,70 @@ class EntityManager {
         });
     }
 
+    private var _queryCache:Map<String, Map<String, RecordSet>> = [];
+    private var _nextQueryCacheId:Float = 1;
+    private var _queryCacheHitCount:Int = 0;
+    private function generateQueryCachedId():String {
+        var id = _nextQueryCacheId;
+        _nextQueryCacheId++;
+        return Std.string(id);
+    }
+
+
+    private function clearQueryCache(cacheId:String) {
+        _queryCache.remove(cacheId);
+    }
+
     private function find(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet> {
         return new Promise((resolve, reject) -> {
-            lookupTable(tableName).then(table -> {
-                return table.find(query);
-            }).then(result -> {
-                resolve(result.data);
-            }, error -> {
-                reject(error);
-            });
+            #if entities_no_query_cache
+            cacheId = null;
+            #end
+            if (cacheId != null) {
+                var cache = _queryCache.get(cacheId);
+                var queryKey = tableName + "|" + Query.queryExprToSql(query);
+                if (cache != null && cache.exists(queryKey)) {
+                    _queryCacheHitCount++;
+                    resolve(cache.get(queryKey));
+                } else {
+                    lookupTable(tableName).then(table -> {
+                        return table.find(query);
+                    }).then(result -> {
+                        if (cache == null) {
+                            cache = [];
+                            _queryCache.set(cacheId, cache);
+                        }
+
+                        cache.set(queryKey, result.data);
+                        switch (query) {
+                            case QueryBinop(QOpIn, QueryValue(v1), QueryValue(v2)):
+                                var field:String = cast v1;
+                                field = field.replace("%", "");
+                                var list:Array<Any> = cast v2;
+                                for (l in list) {
+                                    var subQuery = Query.query(field = l);
+                                    var record = result.data.findRecord(field, l);
+                                    var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery);
+                                    var subResult = new RecordSet([record]);
+                                    cache.set(subCacheKey, subResult);
+                                }
+                            case _:    
+                        }
+
+                        resolve(result.data);
+                    }, error -> {
+                        reject(error);
+                    });
+                }
+            } else {
+                lookupTable(tableName).then(table -> {
+                    return table.find(query);
+                }).then(result -> {
+                    resolve(result.data);
+                }, error -> {
+                    reject(error);
+                });
+            }
         });
     }
 
