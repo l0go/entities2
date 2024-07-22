@@ -17,7 +17,7 @@ class TestBasic extends TestBase {
     
     function setup(async:Async) {
         logging.LogManager.instance.addAdaptor(new logging.adaptors.ConsoleLogAdaptor({
-            levels: [logging.LogLevel.Info, logging.LogLevel.Error]
+            levels: [logging.LogLevel.Info]
         }));
         setupEntities(db).then(_ -> {
             async.done();
@@ -98,7 +98,10 @@ class TestBasic extends TestBase {
         entity1.stringArray1 = ["string 1A", "string 1B", "string 1C"];
         entity1.stringArray2 = ["string 2A", "string 2B"];
 
+        profileStart("testBasic_PrimitiveArrays_String");
+        measureStart("add()");
         entity1.add().then(entity -> {
+            measureEnd("add()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.stringArray1.length);
             Assert.equals("string 1A", entity.stringArray1[0]);
@@ -107,8 +110,10 @@ class TestBasic extends TestBase {
             Assert.equals(2, entity.stringArray2.length);
             Assert.equals("string 2A", entity.stringArray2[0]);
             Assert.equals("string 2B", entity.stringArray2[1]);
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.stringArray1.length);
             Assert.equals("string 1A", entity.stringArray1[0]);
@@ -122,8 +127,10 @@ class TestBasic extends TestBase {
             entity.stringArray1[2] += " - edited 2";
             entity.stringArray2[0] += " - edited 3";
 
+            measureStart("update()");
             return entity.update();
         }).then(entity -> {
+            measureEnd("update()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.stringArray1.length);
             Assert.equals("string 1A - edited 1", entity.stringArray1[0]);
@@ -133,6 +140,7 @@ class TestBasic extends TestBase {
             Assert.equals("string 2A - edited 3", entity.stringArray2[0]);
             Assert.equals("string 2B", entity.stringArray2[1]);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -144,6 +152,7 @@ class TestBasic extends TestBase {
         entity1.boolArray1 = [true, false, false];
         entity1.boolArray2 = [false, true];
 
+        profileStart("testBasic_PrimitiveArrays_Bool");
         entity1.add().then(entity -> {
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.boolArray1.length);
@@ -153,8 +162,10 @@ class TestBasic extends TestBase {
             Assert.equals(2, entity.boolArray2.length);
             Assert.equals(false, entity.boolArray2[0]);
             Assert.equals(true, entity.boolArray2[1]);
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.boolArray1.length);
             Assert.equals(true, entity.boolArray1[0]);
@@ -179,6 +190,7 @@ class TestBasic extends TestBase {
             Assert.equals(true, entity.boolArray2[0]);
             Assert.equals(true, entity.boolArray2[1]);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -192,6 +204,7 @@ class TestBasic extends TestBase {
         entity1.boolArray1 = [true, false, false];
         entity1.boolArray2 = [false, true];
 
+        profileStart("testBasic_PrimitiveArrays_String_And_Bool");
         entity1.add().then(entity -> {
             Assert.equals("entity1", entity.stringValue);
 
@@ -211,8 +224,10 @@ class TestBasic extends TestBase {
             Assert.equals(false, entity.boolArray2[0]);
             Assert.equals(true, entity.boolArray2[1]);
 
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
 
             Assert.equals(3, entity.stringArray1.length);
@@ -258,6 +273,7 @@ class TestBasic extends TestBase {
             Assert.equals(true, entity.boolArray2[0]);
             Assert.equals(true, entity.boolArray2[1]);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -269,6 +285,7 @@ class TestBasic extends TestBase {
         entity1.intArray1 = [111, 222, 333];
         entity1.intArray2 = [444, 555];
 
+        profileStart("testBasic_PrimitiveArrays_Int");
         entity1.add().then(entity -> {
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.intArray1.length);
@@ -278,8 +295,10 @@ class TestBasic extends TestBase {
             Assert.equals(2, entity.intArray2.length);
             Assert.equals(444, entity.intArray2[0]);
             Assert.equals(555, entity.intArray2[1]);
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.intArray1.length);
             Assert.equals(111, entity.intArray1[0]);
@@ -304,6 +323,7 @@ class TestBasic extends TestBase {
             Assert.equals(1776, entity.intArray2[0]);
             Assert.equals(555, entity.intArray2[1]);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -315,6 +335,7 @@ class TestBasic extends TestBase {
         entity1.floatArray1 = [111.11, 222.22, 333.33];
         entity1.floatArray2 = [444.44, 555.55];
 
+        profileStart("testBasic_PrimitiveArrays_Float");
         entity1.add().then(entity -> {
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.floatArray1.length);
@@ -324,8 +345,10 @@ class TestBasic extends TestBase {
             Assert.equals(2, entity.floatArray2.length);
             Assert.equals(444.44, entity.floatArray2[0]);
             Assert.equals(555.55, entity.floatArray2[1]);
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.floatArray1.length);
             Assert.equals(111.11, entity.floatArray1[0]);
@@ -350,6 +373,7 @@ class TestBasic extends TestBase {
             Assert.equals(1777.76, entity.floatArray2[0]);
             Assert.equals(555.55, entity.floatArray2[1]);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -361,6 +385,7 @@ class TestBasic extends TestBase {
         entity1.dateArray1 = [new Date(2000, 1, 2, 3, 4, 5), new Date(2001, 2, 3, 4, 5, 6), new Date(2002, 3, 4, 5, 6, 7)];
         entity1.dateArray2 = [new Date(2003, 4, 5, 6, 7, 8), new Date(2004, 5, 6, 7, 8, 9)];
 
+        profileStart("testBasic_PrimitiveArrays_Date");
         entity1.add().then(entity -> {
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.dateArray1.length);
@@ -370,8 +395,10 @@ class TestBasic extends TestBase {
             Assert.equals(2, entity.dateArray2.length);
             Assert.equals(new Date(2003, 4, 5, 6, 7, 8).toString(), entity.dateArray2[0].toString());
             Assert.equals(new Date(2004, 5, 6, 7, 8, 9).toString(), entity.dateArray2[1].toString());
+            measureStart("findById()");
             return BasicEntity.findById(1);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("entity1", entity.stringValue);
             Assert.equals(3, entity.dateArray1.length);
             Assert.equals(new Date(2000, 1, 2, 3, 4, 5).toString(), entity.dateArray1[0].toString());
@@ -396,6 +423,7 @@ class TestBasic extends TestBase {
             Assert.equals(new Date(2013, 11, 12, 13, 14, 15).toString(), entity.dateArray2[0].toString());
             Assert.equals(new Date(2004, 5, 6, 7, 8, 9).toString(), entity.dateArray2[1].toString());
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -407,6 +435,7 @@ class TestBasic extends TestBase {
         mainEntity.entity1 = createEntity("entity1", 123);
         mainEntity.entity2 = createEntity("entity2", 456);
 
+        profileStart("testBasic_OneToOne");
         mainEntity.add().then(mainEntity -> {
             Assert.equals("mainEntity", mainEntity.stringValue);
             Assert.equals(111, mainEntity.intValue);
@@ -417,8 +446,10 @@ class TestBasic extends TestBase {
             Assert.equals("entity2", mainEntity.entity2.stringValue);
             Assert.equals(456, mainEntity.entity2.intValue);
             
+            measureStart("findById()");
             return BasicEntity.findById(mainEntity.basicEntityId);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("mainEntity", entity.stringValue);
             Assert.equals(111, entity.intValue);
 
@@ -445,6 +476,7 @@ class TestBasic extends TestBase {
             Assert.equals("entity2 - edited 3", entity.entity2.stringValue);
             Assert.equals(456, entity.entity2.intValue);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -456,6 +488,7 @@ class TestBasic extends TestBase {
         mainEntity.entitiesArray1 = [createEntity("entity 1A"), createEntity("entity 1B"), createEntity("entity 1C")];
         mainEntity.entitiesArray2 = [createEntity("entity 2A"), createEntity("entity 2B")];
 
+        profileStart("testBasic_OneToMany");
         mainEntity.add().then(mainEntity -> {
             Assert.equals("mainEntity", mainEntity.stringValue);
             Assert.equals(111, mainEntity.intValue);
@@ -469,8 +502,10 @@ class TestBasic extends TestBase {
             Assert.equals("entity 2A", mainEntity.entitiesArray2[0].stringValue);
             Assert.equals("entity 2B", mainEntity.entitiesArray2[1].stringValue);
             
+            measureStart("findById()");
             return BasicEntity.findById(mainEntity.basicEntityId);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("mainEntity", entity.stringValue);
             Assert.equals(111, entity.intValue);
 
@@ -490,8 +525,10 @@ class TestBasic extends TestBase {
 
             return entity.update();
         }).then(entity -> {
+            measureStart("findById()");
             return BasicEntity.findById(entity.basicEntityId);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("mainEntity - edited 1", entity.stringValue);
             Assert.equals(111, entity.intValue);
 
@@ -504,6 +541,7 @@ class TestBasic extends TestBase {
             Assert.equals("entity 2A", entity.entitiesArray2[0].stringValue);
             Assert.equals("entity 2B - edited 4", entity.entitiesArray2[1].stringValue);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -514,12 +552,15 @@ class TestBasic extends TestBase {
         var mainEntity = createEntity("mainEntity", 111);
         mainEntity.limitedStringValue = "this string is over the 20 char limit for the field";
 
+        profileStart("testBasic_OneToMany");
         mainEntity.add().then(mainEntity -> {
             Assert.equals("mainEntity", mainEntity.stringValue);
             Assert.equals(111, mainEntity.intValue);
             
+            measureStart("findById()");
             return BasicEntity.findById(mainEntity.basicEntityId);
         }).then(entity -> {
+            measureEnd("findById()");
             Assert.equals("mainEntity", entity.stringValue);
             Assert.equals(111, entity.intValue);
             Assert.equals("this string is over ", entity.limitedStringValue);
@@ -533,6 +574,7 @@ class TestBasic extends TestBase {
             Assert.equals(111, entity.intValue);
             Assert.equals("12345678901234567890", entity.limitedStringValue);
 
+            profileEnd();
             async.done();
         }, error -> {
             trace("ERROR", error);
@@ -549,7 +591,6 @@ class TestBasic extends TestBase {
         }, error -> {
             Assert.pass();
             async.done();
-            trace("ERROR", error);
         });
     }
 }
