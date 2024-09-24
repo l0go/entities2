@@ -1,7 +1,5 @@
 package entities.macros;
 
-import haxe.macro.ExprTools;
-import haxe.macro.ComplexTypeTools;
 #if macro
 
 import haxe.macro.Context;
@@ -9,6 +7,8 @@ import haxe.macro.Expr;
 import entities.macros.helpers.ClassBuilder;
 import entities.macros.helpers.ClassField;
 import db.TableSchema;
+import haxe.macro.ExprTools;
+import haxe.macro.ComplexTypeTools;
 
 using haxe.macro.Tools;
 using entities.macros.EntityComplexTypeTools;
@@ -301,6 +301,7 @@ class EntityBuilder {
         var toRecordFn = entityClass.addFunction("toRecord", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: db.Record, [APrivate]);
+        toRecordFn.metadata.add(":noCompletion");
 
         toRecordFn.code += macro @:privateAccess {
             var record = new db.Record();
@@ -330,6 +331,7 @@ class EntityBuilder {
             {name: "queryCacheId", type: macro: String},
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<$entityComplexType>, [APrivate]);
+        fromRecordFn.metadata.add(":noCompletion");
 
         fromRecordFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
@@ -519,6 +521,7 @@ class EntityBuilder {
         var addDataFn = entityClass.addFunction("addData", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<$entityComplexType>, [APrivate]);
+        addDataFn.metadata.add(":noCompletion");
 
         addDataFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
@@ -544,6 +547,7 @@ class EntityBuilder {
         var addJoinDataFn = entityClass.addFunction("addJoinData", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<Bool>, [APrivate]);
+        addJoinDataFn.metadata.add(":noCompletion");
 
         addJoinDataFn.code += macro {
             return new promises.Promise((resolve, reject) -> @:privateAccess {
@@ -656,12 +660,13 @@ class EntityBuilder {
         var entityTableName = entityDefinition.tableName;
         var primaryKeyName = entityDefinition.primaryKeyFieldName;
 
-        var addDataFn = entityClass.addFunction("deleteData", [
+        var deleteDataDataFn = entityClass.addFunction("deleteData", [
             {name: "entityInDB", type: macro: $entityComplexType},
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<$entityComplexType>, [APrivate]);
+        deleteDataDataFn.metadata.add(":noCompletion");
 
-        addDataFn.code += macro @:privateAccess {
+        deleteDataDataFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
                     return entities.EntityManager.instance.deleteAll($v{entityTableName}, primaryKeyQuery($i{primaryKeyName}));
@@ -681,12 +686,13 @@ class EntityBuilder {
         var entityComplexType = entityClass.toComplexType();
         var primaryKeyField = entityDefinition.primaryKeyFieldName;
 
-        var addJoinDataFn = entityClass.addFunction("deleteJoinData", [
+        var deleteJoinDataFn = entityClass.addFunction("deleteJoinData", [
             {name: "entityInDB", type: macro: $entityComplexType},
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<Bool>, [APrivate]);
+        deleteJoinDataFn.metadata.add(":noCompletion");
 
-        addJoinDataFn.code += macro {
+        deleteJoinDataFn.code += macro {
             return new promises.Promise((resolve, reject) -> @:privateAccess {
                 init().then(_ -> {
                     var promiseList:Array<() -> promises.Promise<Any>> = [];
@@ -844,6 +850,7 @@ class EntityBuilder {
             {name: "entityInDB", type: macro: $entityComplexType},
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<$entityComplexType>, [APrivate]);
+        updateDataFn.metadata.add(":noCompletion");
 
         updateDataFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
@@ -869,6 +876,7 @@ class EntityBuilder {
             {name: "entityInDB", type: macro: $entityComplexType},
             {name: "fieldSet", type: macro: entities.EntityFieldSet}
         ], macro: promises.Promise<Bool>, [APrivate]);
+        updateJoinDataFn.metadata.add(":noCompletion");
 
         updateJoinDataFn.code += macro {
             return new promises.Promise((resolve, reject) -> @:privateAccess {
