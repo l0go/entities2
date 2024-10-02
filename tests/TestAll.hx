@@ -28,6 +28,7 @@ class TestAll {
             trace("MYSQL_PASS: " + Sys.getEnv("MYSQL_PASS"));
 
             addBasicCases(runner, mysql("basic"));
+            addGenericConfigCases(runner, mysql("genericconfig"));
         }
 
         Report.create(runner, SuccessResultsDisplayMode.AlwaysShowSuccessResults, HeaderDisplayMode.NeverShowHeader);
@@ -38,10 +39,17 @@ class TestAll {
     }
 
     private static function addBasicCases(runner:Runner, db:IDatabase) {
-        runner.addCase(new TestBasic(db));
-        runner.addCase(new TestAdd(db));
-        runner.addCase(new TestDelete(db));
-        runner.addCase(new TestFieldSets_Blacklist_Basic(db));
+        runner.addCase(new cases.basic.TestBasic(db));
+        runner.addCase(new cases.basic.TestAdd(db));
+        runner.addCase(new cases.basic.TestDelete(db));
+        runner.addCase(new cases.basic.TestFieldSets_Blacklist_Basic(db));
+    }
+
+    private static function addGenericConfigCases(runner:Runner, db:IDatabase) {
+        runner.addCase(new cases.genericconfig.TestBasic(db));
+        runner.addCase(new cases.genericconfig.TestUpdate(db));
+        runner.addCase(new cases.genericconfig.TestComplex(db));
+        runner.addCase(new cases.genericconfig.TestDelete(db));
     }
 
     private static function sqlite(name:String):IDatabase {
@@ -55,7 +63,8 @@ class TestAll {
             database: name,
             host: Sys.getEnv("MYSQL_HOST"),
             user: Sys.getEnv("MYSQL_USER"),
-            pass: Sys.getEnv("MYSQL_PASS")
+            pass: Sys.getEnv("MYSQL_PASS"),
+            //port: 3308
         });
     }
 }

@@ -76,7 +76,6 @@ class Initializer {
         });
     }
 
-
     public static function createEntity(stringValue:String, intValue:Null<Int> = null, floatValue:Null<Float> = null, boolValue:Null<Bool> = null, dateValue:Date = null, entity1:BasicEntity = null, entity2:BasicEntity = null, entitiesArray1:Array<BasicEntity> = null, entitiesArray2:Array<BasicEntity> = null) {
         var entity = new BasicEntity();
         entity.stringValue = stringValue;
