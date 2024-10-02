@@ -313,6 +313,10 @@ class EntityManager {
                 return value == 1;
             case Date:
                 return Date.fromString(value);
+            case Decimal | Number:    
+                if (value == "nan") {
+                    value = null;
+                }
             case _:    
         }
         return value;
