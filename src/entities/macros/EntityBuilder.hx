@@ -2,21 +2,21 @@ package entities.macros;
 
 #if macro
 
-import haxe.macro.Context;
-import haxe.macro.Expr;
+import db.TableSchema;
 import entities.macros.helpers.ClassBuilder;
 import entities.macros.helpers.ClassField;
-import db.TableSchema;
-import haxe.macro.ExprTools;
 import haxe.macro.ComplexTypeTools;
+import haxe.macro.Context;
+import haxe.macro.Expr;
+import haxe.macro.ExprTools;
 
-using haxe.macro.Tools;
-using entities.macros.EntityComplexTypeTools;
-using entities.macros.ClassBuilderTools;
-using entities.macros.EntityBuilderTools;
-using entities.macros.ClassVariableTools;
-using entities.macros.TableSchemaTools;
 using entities.EntityDefinitionTools;
+using entities.macros.ClassBuilderTools;
+using entities.macros.ClassVariableTools;
+using entities.macros.EntityBuilderTools;
+using entities.macros.EntityComplexTypeTools;
+using entities.macros.TableSchemaTools;
+using haxe.macro.Tools;
 
 class EntityBuilder {
     macro static function build():Array<Field> {
@@ -39,145 +39,161 @@ class EntityBuilder {
         entityClass.checkForPrimaryKeys(entityDefinition);
         //var entityComplexType = entityClass.toComplexType();
 
-        for (v in entityClass.vars) {
-            if (v.isStatic) {
-                continue;
-            }
+        if (!entityClass.isExtern) {
+            for (v in entityClass.vars) {
+                if (v.isStatic) {
+                    continue;
+                }
 
-            var fieldName = v.name;
-            var fieldOptions:Array<EntityFieldOption> = v.entityFieldOptions();
+                var fieldName = v.name;
+                var fieldOptions:Array<EntityFieldOption> = v.entityFieldOptions();
 
-            switch (v.complexType) {
-                case (macro: Bool)  | (macro: Null<Bool>):
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Boolean });
-                case (macro: Int)   | (macro: Null<Int>):
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Number });
-                case (macro: Float) | (macro: Null<Float>):
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
-                case (macro: String):
-                    var size = v.metadata.paramAsInt(EntityMetadata.Size);
-                    if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
-                        size = EntityManager.DefaultFieldSize;
-                    }
-                    var sizeTruncateString = v.metadata.paramAsString("size", 1);
-                    if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.Truncate && !fieldOptions.contains(EntityFieldOption.TruncateToSize)) {
-                        fieldOptions.push(EntityFieldOption.TruncateToSize);
-                    } else if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.NoTruncate) {
-                        fieldOptions.remove(EntityFieldOption.TruncateToSize);
-                    }
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text(size) });
-                case (macro: Date):
-                    entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Date });
-                case (macro: Array<$valueComplexType>):
-                    if (valueComplexType.isEntity()) {
-                        var entityValueClass = new ClassBuilder(valueComplexType.toType());
-                        if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
-                            entityValueClass = entityClass;
+                switch (v.complexType) {
+                    case (macro: Bool)  | (macro: Null<Bool>):
+                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Boolean });
+                    case (macro: Int)   | (macro: Null<Int>):
+                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Number });
+                    case (macro: Float) | (macro: Null<Float>):
+                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
+                    case (macro: String):
+                        var size = v.metadata.paramAsInt(EntityMetadata.Size);
+                        if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
+                            size = EntityManager.DefaultFieldSize;
                         }
-                        var entityValueFullClassName = valueComplexType.toType().toString();
-                        entityDefinition.fields.push({
-                            name: fieldName,
-                            options: fieldOptions,
-                            type: EntityFieldType.Entity(
-                                entityValueClass.qualifiedName,
-                                EntityFieldRelationship.OneToMany(
-                                    entityClass.tableName(), entityClass.primaryKeyFieldName(),
-                                    entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
+                        var sizeTruncateString = v.metadata.paramAsString("size", 1);
+                        if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.Truncate && !fieldOptions.contains(EntityFieldOption.TruncateToSize)) {
+                            fieldOptions.push(EntityFieldOption.TruncateToSize);
+                        } else if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.NoTruncate) {
+                            fieldOptions.remove(EntityFieldOption.TruncateToSize);
+                        }
+                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text(size) });
+                    case (macro: Date):
+                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Date });
+                    case (macro: Array<$valueComplexType>):
+                        if (valueComplexType.isEntity()) {
+                            var entityValueClass = new ClassBuilder(valueComplexType.toType());
+                            if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
+                                entityValueClass = entityClass;
+                            }
+                            var entityValueFullClassName = valueComplexType.toType().toString();
+                            entityDefinition.fields.push({
+                                name: fieldName,
+                                options: fieldOptions,
+                                type: EntityFieldType.Entity(
+                                    entityValueClass.qualifiedName,
+                                    EntityFieldRelationship.OneToMany(
+                                        entityClass.tableName(), entityClass.primaryKeyFieldName(),
+                                        entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
+                                    ),
+                                    EntityFieldType.Number
+                                )
+                            });
+                        } else {
+                            var primitiveType = null;
+                            switch (valueComplexType) {
+                                case (macro: Bool)  | (macro: Null<Bool>):
+                                    primitiveType = "Bool";
+                                case (macro: Int)   | (macro: Null<Int>):    
+                                    primitiveType = "Int";
+                                case (macro: Float) | (macro: Null<Float>):
+                                    primitiveType = "Float";
+                                case (macro: String):
+                                    primitiveType = "String";
+                                case (macro: Date):
+                                    primitiveType = "Date";
+                                case _:
+                                    trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", valueComplexType);
+                            }
+                            var valueComplexType = TPath(primitiveType.primitiveEntityTypePathFromType());
+                            var entityValueClass = new ClassBuilder(valueComplexType.toType());
+                            if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
+                                entityValueClass = entityClass;
+                            }
+                            // primitive arrays should cascade deletions _always_
+                            if (!fieldOptions.contains(EntityFieldOption.CascadeDeletions)) {
+                                fieldOptions.push(EntityFieldOption.CascadeDeletions);
+                            }
+                            var entityValueFullClassName = valueComplexType.toType().toString();
+                            entityDefinition.fields.push({
+                                name: fieldName,
+                                options: fieldOptions,
+                                type: EntityFieldType.Entity(
+                                    entityValueClass.qualifiedName,
+                                    EntityFieldRelationship.OneToMany(
+                                        entityClass.tableName(), entityClass.primaryKeyFieldName(),
+                                        entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
+                                    ),
+                                    EntityFieldType.Number
                                 ),
-                                EntityFieldType.Number
-                            )
-                        });
-                    } else {
-                        var primitiveType = null;
-                        switch (valueComplexType) {
-                            case (macro: Bool)  | (macro: Null<Bool>):
-                                primitiveType = "Bool";
-                            case (macro: Int)   | (macro: Null<Int>):    
-                                primitiveType = "Int";
-                            case (macro: Float) | (macro: Null<Float>):
-                                primitiveType = "Float";
-                            case (macro: String):
-                                primitiveType = "String";
-                            case (macro: Date):
-                                primitiveType = "Date";
-                            case _:
-                                trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", valueComplexType);
+                                primitive: true,
+                                primitiveType: primitiveType
+                            });
+                            entityClass.addVar("_" + fieldName + "Entities", macro: Array<$valueComplexType>, macro null, [APrivate]);
                         }
-                        var valueComplexType = TPath(primitiveType.primitiveEntityTypePathFromType());
-                        var entityValueClass = new ClassBuilder(valueComplexType.toType());
-                        if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
-                            entityValueClass = entityClass;
+                    case (macro: Map<$keyComplexType, $valueComplexType>):
+                    case (macro: $valueComplexType):
+                        if (valueComplexType.isEntity()) {
+                            var entityValueClass = new ClassBuilder(valueComplexType.toType());
+                            if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
+                                entityValueClass = entityClass;
+                            }
+                            entityDefinition.fields.push({
+                                name: fieldName,
+                                options: fieldOptions,
+                                type: EntityFieldType.Entity(
+                                    entityValueClass.qualifiedName,
+                                    EntityFieldRelationship.OneToOne(
+                                        entityClass.tableName(), entityClass.primaryKeyFieldName(),
+                                        entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
+                                    ),
+                                    EntityFieldType.Number
+                                )
+                            });
+                        } else {
+                            trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", valueComplexType);
                         }
-                        // primitive arrays should cascade deletions _always_
-                        if (!fieldOptions.contains(EntityFieldOption.CascadeDeletions)) {
-                            fieldOptions.push(EntityFieldOption.CascadeDeletions);
-                        }
-                        var entityValueFullClassName = valueComplexType.toType().toString();
-                        entityDefinition.fields.push({
-                            name: fieldName,
-                            options: fieldOptions,
-                            type: EntityFieldType.Entity(
-                                entityValueClass.qualifiedName,
-                                EntityFieldRelationship.OneToMany(
-                                    entityClass.tableName(), entityClass.primaryKeyFieldName(),
-                                    entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
-                                ),
-                                EntityFieldType.Number
-                            ),
-                            primitive: true,
-                            primitiveType: primitiveType
-                        });
-                        entityClass.addVar("_" + fieldName + "Entities", macro: Array<$valueComplexType>, macro null, [APrivate]);
-                    }
-                case (macro: Map<$keyComplexType, $valueComplexType>):
-                case (macro: $valueComplexType):
-                    if (valueComplexType.isEntity()) {
-                        var entityValueClass = new ClassBuilder(valueComplexType.toType());
-                        if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
-                            entityValueClass = entityClass;
-                        }
-                        entityDefinition.fields.push({
-                            name: fieldName,
-                            options: fieldOptions,
-                            type: EntityFieldType.Entity(
-                                entityValueClass.qualifiedName,
-                                EntityFieldRelationship.OneToOne(
-                                    entityClass.tableName(), entityClass.primaryKeyFieldName(),
-                                    entityValueClass.tableName(), entityValueClass.primaryKeyFieldName()
-                                ),
-                                EntityFieldType.Number
-                            )
-                        });
-                    } else {
-                        trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", valueComplexType);
-                    }
+                }
+                //Sys.println("entities    >    " + v.name);
             }
-            //Sys.println("entities    >    " + v.name);
         }
 
-        buildEntityDefinitionFields(entityClass, entityDefinition);
-        buildTableSchemaFields(entityClass, entityDefinition);
-        buildInit(entityClass, entityDefinition);
-        buildCheckTables(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildEntityDefinitionFields(entityClass, entityDefinition);
+            buildTableSchemaFields(entityClass, entityDefinition);
+            buildInit(entityClass, entityDefinition);
+            buildCheckTables(entityClass, entityDefinition);
+        }
+
         buildFieldSets(entityClass, entityDefinition);
 
-        buildToRecord(entityClass, entityDefinition);
-        buildFromRecord(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildToRecord(entityClass, entityDefinition);
+            buildFromRecord(entityClass, entityDefinition);
+        }
         
         buildAdd(entityClass, entityDefinition);
-        buildAddData(entityClass, entityDefinition);
-        buildAddJoinData(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildAddData(entityClass, entityDefinition);
+            buildAddJoinData(entityClass, entityDefinition);
+        }
 
         buildDelete(entityClass, entityDefinition);
-        buildDeleteData(entityClass, entityDefinition);
-        buildDeleteJoinData(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildDeleteData(entityClass, entityDefinition);
+            buildDeleteJoinData(entityClass, entityDefinition);
+        }
         buildDeleteById(entityClass, entityDefinition);
 
         buildUpdate(entityClass, entityDefinition);
-        buildUpdateData(entityClass, entityDefinition);
-        buildUpdateJoinData(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildUpdateData(entityClass, entityDefinition);
+            buildUpdateJoinData(entityClass, entityDefinition);
+        }
 
-        buildFindInternal(entityClass, entityDefinition);
+        if (!entityClass.isExtern) {
+            buildFindInternal(entityClass, entityDefinition);
+        }
+        buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
 
         return entityClass.fields;
@@ -256,6 +272,11 @@ class EntityBuilder {
                 }
             });
         }
+
+        var __init__Fn = entityClass.addStaticFunction("__init__", null, [APrivate]);
+        __init__Fn.code += macro @:privateAccess {
+            entities.EntityManager.instance.registerEntityInit(init);
+        }
     }
 
     public static function buildCheckTables(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
@@ -290,7 +311,11 @@ class EntityBuilder {
                 case _:    
             }
 
-            entityClass.addStaticVar(name, macro: entities.EntityFieldSet, macro new entities.EntityFieldSet($v{finalValues}), [AFinal]);
+            if (!entityClass.isExtern) {
+                entityClass.addStaticVar(name, macro: entities.EntityFieldSet, macro new entities.EntityFieldSet($v{finalValues}), [AFinal]);
+            } else {
+                entityClass.addStaticVar(name, macro: entities.EntityFieldSet, null, [AFinal]);
+            }
         }
     }
 
@@ -445,6 +470,9 @@ class EntityBuilder {
         var addFn = entityClass.addFunction("add", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         addFn.code += macro @:privateAccess {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
@@ -603,6 +631,9 @@ class EntityBuilder {
         var addFn = entityClass.addFunction("delete", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         addFn.code += macro {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
@@ -733,6 +764,9 @@ class EntityBuilder {
             {name: "id", type: macro: Null<Int>},
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<Bool>, [APrivate]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         deleteJoinDataFn.code += macro {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
@@ -760,6 +794,9 @@ class EntityBuilder {
         var updateFn = entityClass.addFunction("update", [
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         updateFn.code += macro @:privateAccess {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
@@ -975,6 +1012,9 @@ class EntityBuilder {
             {name: "id", type: macro: Null<Int>},
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         findByIdFn.code += macro @:privateAccess {
             var queryCacheId = entities.EntityManager.instance.generateQueryCachedId();
@@ -982,6 +1022,34 @@ class EntityBuilder {
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
                     return findInternal(primaryKeyQuery(id), queryCacheId, fieldSet);
+                }).then(entitiesList -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    resolve(entitiesList[0]);
+                }, error -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    reject(error);
+                });
+            });
+        }
+    }
+
+    static function buildFind(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+
+        var findByIdFn = entityClass.addStaticFunction("find", [
+            {name: "query", type: macro: Query.QueryExpr},
+            {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
+        ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
+
+        findByIdFn.code += macro @:privateAccess {
+            var queryCacheId = entities.EntityManager.instance.generateQueryCachedId();
+            if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
+            return new promises.Promise((resolve, reject) -> {
+                init().then(_ -> {
+                    return findInternal(query, queryCacheId, fieldSet);
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList[0]);

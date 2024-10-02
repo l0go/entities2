@@ -1,5 +1,6 @@
 package entities;
 
+import promises.PromiseUtils;
 import Query.QueryExpr;
 import db.RecordSet;
 import db.DatabaseResult;
@@ -12,6 +13,34 @@ import db.IDatabase;
 
 using StringTools;
 
+#if (!macro && (entities_as_externs || (modular && !modular_host)))
+
+extern class EntityManager {
+    public static var DefaultFieldSize:Int;
+    public static var instance(get, null):EntityManager;
+    public var database:IDatabase;
+
+    private function registerEntityInit(fn:Void->Promise<Bool>):Void;
+    private function connect():Promise<Bool>;
+    private function disconnect():Promise<Bool>;
+    private function lookupTable(tableName:String):Promise<ITable>;
+    private function updateRecord(tableName:String, query:QueryExpr, record:Record):Promise<Record>;
+    private function addRecord(tableName:String, record:Record):Promise<Record>;
+    private function addRecords(tableName:String, records:Array<Record>):Promise<RecordSet>;
+    private function generateQueryCachedId():String;
+    private function clearQueryCache(cacheId:String):Void;
+    private function find(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
+    private function deleteAll(tableName:String, query:QueryExpr):Promise<Bool>;
+    private function checkTableSchema(schema:TableSchema):Promise<Bool>;
+    private function diffIds(idsInDB:Array<Null<Int>>, ids:Array<Null<Int>>):{idsToRemove:Array<Null<Int>>, idsToAdd:Array<Null<Int>>};
+    private function convertPrimitiveToDB(value:Any, type:EntityFieldType, options:Array<EntityFieldOption>):Any;
+    private function convertPrimitiveFromDB(value:Any, type:EntityFieldType):Any;
+    private function reset():Promise<Bool>;
+}
+
+#else
+
+@:keep @:expose
 class EntityManager {
     public static var DefaultFieldSize:Int = -1;
 
@@ -28,6 +57,26 @@ class EntityManager {
     public var database:IDatabase;
     
     private function new() {
+    }
+
+    private var _entityInitFunctions:Array<Void->Promise<Bool>> = [];
+    private function registerEntityInit(fn:Void->Promise<Bool>) {
+        _entityInitFunctions.push(fn);
+    }
+
+    public function initAllEntities():Promise<Bool> {
+        return new Promise((resolve, reject) -> {
+            var promises = [];
+            for (initFn in _entityInitFunctions) {
+                promises.push(initFn);
+            }
+
+            PromiseUtils.runSequentially(promises).then(_ -> {
+                resolve(true);
+            }, error -> {
+                reject(error);
+            });
+        });
     }
 
     private var _connected:Bool = false;
@@ -282,3 +331,5 @@ class EntityManager {
     }
 
 }
+
+#end

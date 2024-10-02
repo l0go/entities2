@@ -2,6 +2,16 @@ package entities;
 
 using StringTools;
 
+#if (!macro && (entities_as_externs || (modular && !modular_host)))
+
+extern class EntityFieldSet {
+    public function new(list:Array<String> = null);
+    public function allow(field:String):Bool;
+}
+
+#else
+
+@:keep @:expose
 class EntityFieldSet {
     var whitelist:Array<String> = [];
     var blacklist:Array<String> = [];
@@ -44,3 +54,5 @@ class EntityFieldSet {
         return true;
     }
 }
+
+#end

@@ -35,6 +35,21 @@ class ClassBuilder {
         }
     }
 
+    public var isExtern(get, null):Bool;
+    private function get_isExtern():Bool {
+        if (type != null) {
+            return switch (type) {
+                case TInst(t, params):
+                    t.get().isExtern;
+                case _:
+                    false;    
+            }
+        } else if (classType != null) {
+            return classType.isExtern;
+        }
+        return false;
+    }
+
     public var name(get, null):String;
     private function get_name():String {
         if (type != null) {
@@ -439,12 +454,14 @@ class ClassBuilder {
         var constructor = findFunction("new");
         if (constructor == null) {
             constructor = this.addFunction("new");
-            if (this.superClass == null) {
-                constructor.expr = macro {
-                }
-            } else {
-                constructor.expr = macro {
-                    super();
+            if (!this.isExtern) {
+                if (this.superClass == null) {
+                    constructor.expr = macro {
+                    }
+                } else {
+                    constructor.expr = macro {
+                        super();
+                    }
                 }
             }
         }
