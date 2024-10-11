@@ -206,19 +206,21 @@ class EntityManager {
                         }
 
                         cache.set(queryKey, result.data);
+                        if (query != null) {
                         switch (query) {
-                            case QueryBinop(QOpIn, QueryValue(v1), QueryValue(v2)):
-                                var field:String = cast v1;
-                                field = field.replace("%", "");
-                                var list:Array<Any> = cast v2;
-                                for (l in list) {
-                                    var subQuery = Query.query(field = l);
-                                    var record = result.data.findRecord(field, l);
-                                    var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery);
-                                    var subResult = new RecordSet([record]);
-                                    cache.set(subCacheKey, subResult);
-                                }
-                            case _:    
+                                case QueryBinop(QOpIn, QueryValue(v1), QueryValue(v2)):
+                                    var field:String = cast v1;
+                                    field = field.replace("%", "");
+                                    var list:Array<Any> = cast v2;
+                                    for (l in list) {
+                                        var subQuery = Query.query(field = l);
+                                        var record = result.data.findRecord(field, l);
+                                        var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery);
+                                        var subResult = new RecordSet([record]);
+                                        cache.set(subCacheKey, subResult);
+                                    }
+                                case _:    
+                            }
                         }
 
                         resolve(result.data);

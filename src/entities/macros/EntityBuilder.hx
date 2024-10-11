@@ -216,6 +216,7 @@ class EntityBuilder {
         }
         buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
+        buildFindAll(entityClass, entityDefinition);
 
         return entityClass.fields;
     }
@@ -1095,28 +1096,33 @@ class EntityBuilder {
         }
     }
 
-    /*
     static function buildFindAll(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
         var entityComplexType = entityClass.toComplexType();
 
         var findAllFn = entityClass.addStaticFunction("findAll", [
             {name: "query", type: macro: Query.QueryExpr, value: macro null},
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
-        ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        ], macro: promises.Promise<Array<$entityComplexType>>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
 
         findAllFn.code += macro @:privateAccess {
             var queryCacheId = entities.EntityManager.instance.generateQueryCachedId();
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    resolve(null);
+                    return findInternal(query, queryCacheId, fieldSet);
+                }).then(entitiesList -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    resolve(entitiesList);
                 }, error -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     reject(error);
                 });
             });
         }
     }
-        */
 }
 
 #end
