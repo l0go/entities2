@@ -133,6 +133,27 @@ class EntityBuilder {
                     case (macro: Map<$keyComplexType, $valueComplexType>):
                     case (macro: $valueComplexType):
                         if (valueComplexType.isEntity()) {
+                            if (v.metadata.contains(EntityMetadata.Cascade)) {
+                                var entityPrevRefVarName = "_" + v.name + "PrevRef";
+                                var entityComplexType = v.complexType;
+                                var entityPrevRefsVar = entityClass.addVar(entityPrevRefVarName, macro: $entityComplexType, macro null, [APrivate]);
+
+                                v.remove();
+                                var entityVarName = "_" + v.name;
+                                var entityVar = entityClass.addVar(entityVarName, v.complexType, v.access);
+                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access);
+                                entityProp.addGetter(macro {
+                                    return $i{entityVarName};
+                                });
+                                entityProp.addSetter(macro {
+                                    if ($i{entityPrevRefVarName} == null && $i{entityVarName} != null && $i{entityVarName} != value) {
+                                        $i{entityPrevRefVarName} = $i{entityVarName};
+                                    }
+                                    $i{entityVarName} = value;
+                                    return value;
+                                });
+                            }
+
                             var entityValueClass = new ClassBuilder(valueComplexType.toType());
                             if (entityValueClass.qualifiedName == entityClass.qualifiedName) {
                                 entityValueClass = entityClass;
@@ -813,7 +834,20 @@ class EntityBuilder {
                         // one to one
                         $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
                             var foreignKey = entityField.foreignKey();
+                            var prevRefVarName = "_" + entityField.name + "PrevRef";
+                            var cascadeDeletions = entityField.cascadeDeletions();
                             macro {
+                                ${if (cascadeDeletions) {
+                                    macro {
+                                        if ($i{prevRefVarName} != null && $i{prevRefVarName}.$foreignKey != $i{entityField.name}.$foreignKey) {
+                                            promiseList.push($i{prevRefVarName}.delete.bind());
+                                            $i{prevRefVarName} = null;
+                                        }
+                                    };
+                                } else {
+                                    macro null;
+                                }}
+
                                 if ($i{entityField.name} != null) {
                                     if ($i{entityField.name}.$foreignKey == null) {
                                         promiseList.push($i{entityField.name}.add.bind(fieldSet));

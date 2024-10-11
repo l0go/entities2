@@ -21,6 +21,10 @@ class ClassField {
         this.field = field;
     }
 
+    public function remove() {
+        this.builder.removeField(this.name);
+    }
+
     public var name(get, null):String;
     private function get_name():String {
         if (field != null) {
