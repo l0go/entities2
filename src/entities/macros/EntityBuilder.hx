@@ -9,6 +9,7 @@ import haxe.macro.ComplexTypeTools;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.ExprTools;
+import haxe.macro.TypeTools;
 
 using entities.EntityDefinitionTools;
 using entities.macros.ClassBuilderTools;
@@ -48,12 +49,13 @@ class EntityBuilder {
                 var fieldName = v.name;
                 var fieldOptions:Array<EntityFieldOption> = v.entityFieldOptions();
 
-                switch (v.complexType) {
-                    case (macro: Bool)  | (macro: Null<Bool>):
+                var complexType = TypeTools.toComplexType(Context.followWithAbstracts(ComplexTypeTools.toType(v.complexType)));
+                switch (complexType) {
+                    case (macro: Bool)  | (macro: Null<Bool>)  | (macro: StdTypes.Bool):
                         entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Boolean });
-                    case (macro: Int)   | (macro: Null<Int>):
+                    case (macro: Int)   | (macro: Null<Int>)   | (macro: StdTypes.Int):
                         entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Number });
-                    case (macro: Float) | (macro: Null<Float>):
+                    case (macro: Float) | (macro: Null<Float>) | (macro: StdTypes.Float):
                         entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
                     case (macro: String):
                         var size = v.metadata.paramAsInt(EntityMetadata.Size);
@@ -171,7 +173,7 @@ class EntityBuilder {
                                 )
                             });
                         } else {
-                            trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", valueComplexType);
+                            trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", complexType, Context.followWithAbstracts(ComplexTypeTools.toType(valueComplexType)));
                         }
                 }
                 //Sys.println("entities    >    " + v.name);
