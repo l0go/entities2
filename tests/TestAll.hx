@@ -29,6 +29,7 @@ class TestAll {
 
             addBasicCases(runner, mysql("basic"));
             addGenericConfigCases(runner, mysql("genericconfig"));
+            addRefsCases(runner, mysql("refs"));
         }
 
         Report.create(runner, SuccessResultsDisplayMode.AlwaysShowSuccessResults, HeaderDisplayMode.NeverShowHeader);
@@ -52,6 +53,10 @@ class TestAll {
         runner.addCase(new cases.genericconfig.TestDelete(db));
     }
 
+    private static function addRefsCases(runner:Runner, db:IDatabase) {
+        runner.addCase(new cases.refs.TestBasic(db));
+    }
+
     private static function sqlite(name:String):IDatabase {
         return DatabaseFactory.instance.createDatabase(DatabaseFactory.SQLITE, {
             filename: name + ".db"
@@ -64,7 +69,7 @@ class TestAll {
             host: Sys.getEnv("MYSQL_HOST"),
             user: Sys.getEnv("MYSQL_USER"),
             pass: Sys.getEnv("MYSQL_PASS"),
-            //port: 3308
+            port: 3308
         });
     }
 }

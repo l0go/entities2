@@ -40,7 +40,24 @@ class EntityBuilder {
         entityClass.checkForPrimaryKeys(entityDefinition);
         //var entityComplexType = entityClass.toComplexType();
 
-        if (!entityClass.isExtern) {
+        if (entityClass.isExtern) {
+            for (v in entityClass.vars) {
+                if (v.isStatic) {
+                    continue;
+                }
+
+                var complexType = TypeTools.toComplexType(Context.followWithAbstracts(ComplexTypeTools.toType(v.complexType)));
+                switch (complexType) {
+                    case (macro: $valueComplexType):
+                        if (valueComplexType.isEntity()) {
+                            v.remove();
+                            var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
+                            entityProp.addGetter().metadata.add(":noCompletion");
+                            entityProp.addSetter().metadata.add(":noCompletion");
+                        }
+                }
+            }
+        } else {
             for (v in entityClass.vars) {
                 if (v.isStatic) {
                     continue;
@@ -93,11 +110,11 @@ class EntityBuilder {
                         } else {
                             var primitiveType = null;
                             switch (valueComplexType) {
-                                case (macro: Bool)  | (macro: Null<Bool>):
+                                case (macro: Bool)  | (macro: Null<Bool>)   | (macro: StdTypes.Bool):
                                     primitiveType = "Bool";
-                                case (macro: Int)   | (macro: Null<Int>):    
+                                case (macro: Int)   | (macro: Null<Int>)    | (macro: StdTypes.Int):    
                                     primitiveType = "Int";
-                                case (macro: Float) | (macro: Null<Float>):
+                                case (macro: Float) | (macro: Null<Float>) | (macro: StdTypes.Float):
                                     primitiveType = "Float";
                                 case (macro: String):
                                     primitiveType = "String";
@@ -136,22 +153,52 @@ class EntityBuilder {
                     case (macro: $valueComplexType):
                         if (valueComplexType.isEntity()) {
                             if (v.metadata.contains(EntityMetadata.Cascade)) {
+                                /* MAY NEED THIS STILL
                                 var entityPrevRefVarName = "_" + v.name + "PrevRef";
                                 var entityComplexType = v.complexType;
                                 var entityPrevRefsVar = entityClass.addVar(entityPrevRefVarName, macro: $entityComplexType, macro null, [APrivate]);
+                                */
 
                                 v.remove();
                                 var entityVarName = "_" + v.name;
                                 var entityVar = entityClass.addVar(entityVarName, v.complexType, v.access);
-                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access);
+                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
                                 entityProp.addGetter(macro {
                                     return $i{entityVarName};
                                 });
-                                entityProp.addSetter(macro {
+                                entityProp.addSetter(macro @:privateAccess {
+                                    /* MAY NEED THIS STILL
                                     if ($i{entityPrevRefVarName} == null && $i{entityVarName} != null && $i{entityVarName} != value) {
                                         $i{entityPrevRefVarName} = $i{entityVarName};
                                     }
+                                    @:privateAccess $i{entityVarName}.copyFrom(value);
                                     $i{entityVarName} = value;
+                                    */
+                                    if ($i{entityVarName} == null || value == null) {
+                                        $i{entityVarName} = value;
+                                    } else if (value.primaryKeyValue() != null && $i{entityVarName}.primaryKeyValue() != value.primaryKeyValue()) {
+                                        $i{entityVarName} = value;
+                                    } else {
+                                        @:privateAccess $i{entityVarName}.copyFrom(value);
+                                    }
+                                    return value;
+                                });
+                            } else {
+                                v.remove();
+                                var entityVarName = "_" + v.name;
+                                var entityVar = entityClass.addVar(entityVarName, v.complexType, v.access);
+                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
+                                entityProp.addGetter(macro {
+                                    return $i{entityVarName};
+                                });
+                                entityProp.addSetter(macro @:privateAccess {
+                                    if ($i{entityVarName} == null || value == null) {
+                                        $i{entityVarName} = value;
+                                    } else if (value.primaryKeyValue() != null && $i{entityVarName}.primaryKeyValue() != value.primaryKeyValue()) {
+                                        $i{entityVarName} = value;
+                                    } else {
+                                        @:privateAccess $i{entityVarName}.copyFrom(value);
+                                    }
                                     return value;
                                 });
                             }
@@ -215,6 +262,7 @@ class EntityBuilder {
 
         if (!entityClass.isExtern) {
             buildFindInternal(entityClass, entityDefinition);
+            buildCopyFrom(entityClass, entityDefinition);
         }
         buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
@@ -245,6 +293,11 @@ class EntityBuilder {
         primaryKeysQueryFn.code += macro {
             var q = Query.query(Query.field($v{primaryKeyName}) in primaryKeys);
             return q;
+        }
+
+        var primaryKeyValueFn = entityClass.addFunction("primaryKeyValue", macro: Null<Int>, [APrivate]);
+        primaryKeyValueFn.code += macro {
+            return $i{primaryKeyName};
         }
 
     }
@@ -837,9 +890,12 @@ class EntityBuilder {
                         // one to one
                         $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
                             var foreignKey = entityField.foreignKey();
+                            /* MAY NEED THIS STILL
                             var prevRefVarName = "_" + entityField.name + "PrevRef";
                             var cascadeDeletions = entityField.cascadeDeletions();
+                            */
                             macro {
+                                /* MAY NEED THIS STILL
                                 ${if (cascadeDeletions) {
                                     macro {
                                         if ($i{prevRefVarName} != null && $i{prevRefVarName}.$foreignKey != $i{entityField.name}.$foreignKey) {
@@ -850,6 +906,7 @@ class EntityBuilder {
                                 } else {
                                     macro null;
                                 }}
+                                */    
 
                                 if ($i{entityField.name} != null) {
                                     if ($i{entityField.name}.$foreignKey == null) {
@@ -1005,6 +1062,52 @@ class EntityBuilder {
                     reject(error);
                 });
             });
+        }
+    }
+
+    static function buildCopyFrom(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+        var entityPrimaryKeyFieldName = entityClass.primaryKeyFieldName();
+
+        var copyFromFn = entityClass.addFunction("copyFrom", [
+            {name: "other", type: macro: $entityComplexType},
+        ], macro: Void, [APrivate]);
+
+        copyFromFn.code += macro @:privateAccess {
+            $b{[for (entityField in entityDefinition.primitiveFields()) {
+                var entityVarName = entityField.name;
+                macro {
+                    ${if (entityField.name == entityPrimaryKeyFieldName) {
+                        macro {
+                            if (this.primaryKeyValue() == null) {
+                                $i{entityVarName} = other.$entityVarName;
+                            }
+                        }
+                    } else {
+                        macro {
+                            $i{entityVarName} = other.$entityVarName;
+
+                        }
+                    }}
+                }
+            }]}
+
+            $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
+                var entityVarName = entityField.name;
+                macro {
+                    $i{entityVarName} = other.$entityVarName;
+                }
+            }]}
+
+            $b{[for (entityField in entityDefinition.entityFields_OneToMany()) {
+                var entityVarName = entityField.name;
+                if (entityField.name == entityPrimaryKeyFieldName) {
+                    continue;
+                }
+                macro {
+                    $i{entityVarName} = other.$entityVarName;
+                }
+            }]}
         }
     }
 

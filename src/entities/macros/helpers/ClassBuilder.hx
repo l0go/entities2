@@ -298,7 +298,7 @@ class ClassBuilder {
         return null;
     }
 
-    public function addProp(name:String, type:Null<ComplexType> = null, access:Array<Access> = null, index:Null<Int> = null):ClassProperty {
+    public function addProp(name:String, type:Null<ComplexType> = null, access:Array<Access> = null, index:Null<Int> = null, get:String = null, set:String = null):ClassProperty {
         if (fields == null) {
             throw "can only add properties when class builder has field array";
         }
@@ -322,10 +322,17 @@ class ClassBuilder {
             type = macro: Any;
         }
 
+        if (get == null) {
+            get = "null";
+        }
+        if (set == null) {
+            set = "null";
+        }
+
         var field:Field = {
             name: name,
             access: access,
-            kind: FProp("null", "null", type),
+            kind: FProp(get, set, type),
             pos: Context.currentPos()
         }
 
