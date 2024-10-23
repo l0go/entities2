@@ -8,7 +8,7 @@ import db.IDatabase;
 import cases.refs.entities.Initializer.*;
 
 @:timeout(10000)
-class TestBasic extends TestBase {
+class TestOneToOne extends TestBase {
     private var db:IDatabase;
 
     public function new(db:IDatabase) {

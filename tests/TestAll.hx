@@ -54,7 +54,7 @@ class TestAll {
     }
 
     private static function addRefsCases(runner:Runner, db:IDatabase) {
-        runner.addCase(new cases.refs.TestBasic(db));
+        runner.addCase(new cases.refs.TestOneToOne(db));
     }
 
     private static function sqlite(name:String):IDatabase {
