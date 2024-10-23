@@ -30,6 +30,7 @@ extern class EntityManager {
     private function generateQueryCachedId():String;
     private function clearQueryCache(cacheId:String):Void;
     private function find(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
+    private function count(tableName:String, query:QueryExpr):Promise<Int>;
     private function deleteAll(tableName:String, query:QueryExpr):Promise<Bool>;
     private function checkTableSchema(schema:TableSchema):Promise<Bool>;
     private function diffIds(idsInDB:Array<Null<Int>>, ids:Array<Null<Int>>):{idsToRemove:Array<Null<Int>>, idsToAdd:Array<Null<Int>>};
