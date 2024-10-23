@@ -55,6 +55,7 @@ class TestAll {
 
     private static function addRefsCases(runner:Runner, db:IDatabase) {
         runner.addCase(new cases.refs.TestOneToOne(db));
+        runner.addCase(new cases.refs.TestOneToMany(db));
     }
 
     private static function sqlite(name:String):IDatabase {

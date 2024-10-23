@@ -31,6 +31,7 @@ class Initializer {
             // pre-init'ing just makes the timings more like what they would be in the real world
             promises.push(MainObject.init.bind());
             promises.push(SubObjectA.init.bind());
+            promises.push(SubSubObjectX.init.bind());
             promises.push(EntityBoolPrimitive.init.bind());
             promises.push(EntityIntPrimitive.init.bind());
             promises.push(EntityFloatPrimitive.init.bind());
@@ -59,6 +60,7 @@ class Initializer {
             EntityManager.instance.reset().then(_ -> {
                 MainObject._init = false;
                 SubObjectA._init = false;
+                SubSubObjectX._init = false;
                 EntityBoolPrimitive._init = false;
                 EntityIntPrimitive._init = false;
                 EntityFloatPrimitive._init = false;
@@ -85,9 +87,17 @@ class Initializer {
         return mainObject;
     }
 
-    public static function createSubObject(name:String):SubObjectA {
+    public static function createSubObject(name:String, arrayOfXs:Array<SubSubObjectX> = null):SubObjectA {
         var subObjectA = new SubObjectA();
         subObjectA.subObjectName = name;
+        subObjectA.arrayOfXs = arrayOfXs;
         return subObjectA;
     }
+
+    public static function createSubSubObjectX(name:String):SubSubObjectX {
+        var o = new SubSubObjectX();
+        o.xName = name;
+        return o;
+    }
+
 }
