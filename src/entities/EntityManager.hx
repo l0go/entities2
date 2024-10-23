@@ -240,6 +240,19 @@ class EntityManager {
         });
     }
 
+
+    private function count(tableName:String, query:QueryExpr):Promise<Int> {
+        return new Promise((resolve, reject) -> {
+            lookupTable(tableName).then(table -> {
+                return table.count(query);
+            }).then(result -> {
+                resolve(result.data);
+            }, error -> {
+                reject(error);
+            });
+        });
+    }
+
     private function deleteAll(tableName:String, query:QueryExpr):Promise<Bool> {
         return new Promise((resolve, reject) -> {
             lookupTable(tableName).then(table -> {

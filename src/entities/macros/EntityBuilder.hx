@@ -267,6 +267,7 @@ class EntityBuilder {
         buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
         buildFindAll(entityClass, entityDefinition);
+        buildCount(entityClass, entityDefinition);
 
         return entityClass.fields;
     }
@@ -1223,6 +1224,29 @@ class EntityBuilder {
                     resolve(entitiesList);
                 }, error -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    reject(error);
+                });
+            });
+        }
+    }
+
+    static function buildCount(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var tableName = entityDefinition.tableName;
+
+        var countFn = entityClass.addStaticFunction("count", [
+            {name: "query", type: macro: Query.QueryExpr, value: macro null}
+        ], macro: promises.Promise<Int>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
+
+        countFn.code += macro @:privateAccess {
+            return new promises.Promise((resolve, reject) -> {
+                init().then(_ -> {
+                    return entities.EntityManager.instance.count($v{tableName}, query);
+                }).then(count -> {
+                    resolve(count);
+                }, error -> {
                     reject(error);
                 });
             });
