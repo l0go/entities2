@@ -197,6 +197,11 @@ class EntityDefinitionTools {
         return field.options.contains(CascadeDeletions);
     }
 
+
+    public static function mustExist(field:EntityFieldDefinition):Bool {
+        return field.options.contains(MustExist);
+    }
+
     public static function toColumnType(type:EntityFieldType):ColumnType {
         return switch (type) {
             case EntityFieldType.Boolean:       ColumnType.Boolean;

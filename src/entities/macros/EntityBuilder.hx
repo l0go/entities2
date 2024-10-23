@@ -891,11 +891,23 @@ class EntityBuilder {
                         // one to one
                         $b{[for (entityField in entityDefinition.entityFields_OneToOne()) {
                             var foreignKey = entityField.foreignKey();
+                            var mustExist:Bool = entityField.mustExist();
                             /* MAY NEED THIS STILL
                             var prevRefVarName = "_" + entityField.name + "PrevRef";
                             var cascadeDeletions = entityField.cascadeDeletions();
                             */
                             macro {
+                                ${if (mustExist) {
+                                    macro {
+                                        if ($i{entityField.name} != null && $i{entityField.name}.$foreignKey == null) {
+                                            reject("property '" + $v{entityField.name} + "' in entity '" + $v{entityClass.name} + "' must already exist in the database, no primary key found on object (" + $v{foreignKey} + ")");
+                                            return null;
+                                        }
+                                    }
+                                } else {
+                                    macro null;
+                                }}
+
                                 /* MAY NEED THIS STILL
                                 ${if (cascadeDeletions) {
                                     macro {
@@ -925,7 +937,22 @@ class EntityBuilder {
                                 fieldName = entityField.primitiveEntityFieldName();
                             }
                             var foreignKey = entityField.foreignKey();
+                            var mustExist:Bool = entityField.mustExist();
                             macro {
+                                ${if (mustExist) {
+                                    macro {
+                                        if ($i{fieldName} != null) {
+                                            for (item in $i{fieldName}) {
+                                                if (item.$foreignKey == null) {
+                                                    reject("property items in '" + $v{entityField.name} + "' in entity '" + $v{entityClass.name} + "' must already exist in the database, no primary key found on object (" + $v{foreignKey} + ")");
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    macro null;
+                                }}
+
                                 ${if (entityField.primitive) {
                                     var primitiveEntityClassComplexType = entityField.primitiveEntityTypePath();
                                     macro {

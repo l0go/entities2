@@ -42,6 +42,9 @@ class ClassVariableTools {
         if (classVariable.metadata.contains(EntityMetadata.Cascade)) {
             fieldOptions.push(EntityFieldOption.CascadeDeletions);
         }
+        if (classVariable.metadata.contains(EntityMetadata.MustExist)) {
+            fieldOptions.push(EntityFieldOption.MustExist);
+        }
         return fieldOptions;
     }
 
