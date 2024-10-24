@@ -818,7 +818,7 @@ class EntityBuilder {
                             if ($i{fieldName} != null) {
                                 var idsInDB = entityInDB.$fieldName.map(item -> item.$foreignKey);
                                 if (idsInDB.length > 0) {
-                                    var query = Query.query(Query.field($v{joinForeignKey}) in idsInDB);
+                                    var query = Query.query(Query.field($v{primaryKeyField}) = this.$primaryKeyField && Query.field($v{joinForeignKey}) in idsInDB);
                                     promiseList.push(entities.EntityManager.instance.deleteAll.bind($v{joinTableName}, query));
                                 }
                             }
