@@ -1065,7 +1065,7 @@ class EntityBuilder {
                                             promiseList.push($p{classDef}.deleteById.bind(id));
                                         }
                                         // we always want to delete the joins
-                                        var query = Query.query(Query.field($v{joinForeignKey}) in diff.idsToRemove);
+                                        var query = Query.query(Query.field($v{primaryKeyField}) = this.$primaryKeyField && Query.field($v{joinForeignKey}) in diff.idsToRemove);
                                         promiseList.push(entities.EntityManager.instance.deleteAll.bind($v{joinTableName}, query));
                                     }
                                 }
