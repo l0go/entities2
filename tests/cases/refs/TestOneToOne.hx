@@ -197,5 +197,4 @@ class TestOneToOne extends TestBase {
             trace("error", error);
         });
     }    
-    
 }

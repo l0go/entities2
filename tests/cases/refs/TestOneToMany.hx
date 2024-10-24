@@ -87,4 +87,25 @@ class TestOneToMany extends TestBase {
             trace("error", error);
         });
     }
+
+    function testBasic_SharedRef(async:Async) {
+        var main = createMainObject("main1");
+        var sharedRef = createSubObject("sub1_A1");
+        main.arrayObjectA1 = [sharedRef];
+        main.arrayObjectA2 = [sharedRef];
+        main.add().then(addedMain -> {
+            Assert.equals(1, addedMain.mainObjectId);
+            Assert.equals(1, addedMain.arrayObjectA1[0].subObjectAId);
+            Assert.equals("sub1_A1", addedMain.arrayObjectA1[0].subObjectName);
+            Assert.equals(1, addedMain.arrayObjectA2[0].subObjectAId);
+            Assert.equals("sub1_A1", addedMain.arrayObjectA1[0].subObjectName);
+            return SubObjectA.count();
+        }).then(objectCount -> {
+            Assert.equals(1, objectCount);
+            async.done();
+        }, error -> {
+            trace("error", error);
+        });
+    }    
+    
 }

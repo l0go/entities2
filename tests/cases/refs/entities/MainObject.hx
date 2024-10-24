@@ -9,4 +9,5 @@ class MainObject implements IEntity {
     public var objectA2:SubObjectA;
 
     public var arrayObjectA1:Array<SubObjectA>;
+    public var arrayObjectA2:Array<SubObjectA>;
 }
