@@ -1,5 +1,6 @@
 package cases.refs;
 
+import cases.refs.entities.SubObjectA;
 import entities.EntityManager;
 import cases.basic.entities.BasicEntity;
 import utest.Assert;
@@ -177,4 +178,24 @@ class TestOneToOne extends TestBase {
         });
     }    
 
+    function testBasic_SharedRef(async:Async) {
+        var main = createMainObject("main1");
+        var sharedRef = createSubObject("sub1_A1");
+        main.objectA1 = sharedRef;
+        main.objectA2 = sharedRef;
+        main.add().then(addedMain -> {
+            Assert.equals(1, addedMain.mainObjectId);
+            Assert.equals(1, addedMain.objectA1.subObjectAId);
+            Assert.equals("sub1_A1", addedMain.objectA1.subObjectName);
+            Assert.equals(1, addedMain.objectA2.subObjectAId);
+            Assert.equals("sub1_A1", addedMain.objectA2.subObjectName);
+            return SubObjectA.count();
+        }).then(objectCount -> {
+            Assert.equals(1, objectCount);
+            async.done();
+        }, error -> {
+            trace("error", error);
+        });
+    }    
+    
 }
