@@ -19,6 +19,7 @@ extern class EntityManager {
     public static var DefaultFieldSize:Int;
     public static var instance(get, null):EntityManager;
     public var database:IDatabase;
+    private var _queryCacheHitCount:Int;
 
     private function registerEntityInit(fn:Void->Promise<Bool>):Void;
     private function connect():Promise<Bool>;
