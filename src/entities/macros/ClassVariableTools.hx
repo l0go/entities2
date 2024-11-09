@@ -45,6 +45,9 @@ class ClassVariableTools {
         if (classVariable.metadata.contains(EntityMetadata.MustExist)) {
             fieldOptions.push(EntityFieldOption.MustExist);
         }
+        if (classVariable.metadata.contains(EntityMetadata.Ignore)) {
+            fieldOptions.push(EntityFieldOption.Ignore);
+        }
         return fieldOptions;
     }
 

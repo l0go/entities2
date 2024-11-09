@@ -6,4 +6,5 @@ enum EntityFieldOption {
     CascadeDeletions;
     MustExist;
     TruncateToSize;
+    Ignore;
 }

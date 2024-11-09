@@ -46,6 +46,11 @@ class EntityBuilder {
                     continue;
                 }
 
+                var fieldOptions:Array<EntityFieldOption> = v.entityFieldOptions();
+                if (fieldOptions.contains(Ignore)) {
+                    continue;
+                }
+
                 var complexType = TypeTools.toComplexType(Context.followWithAbstracts(ComplexTypeTools.toType(v.complexType)));
                 switch (complexType) {
                     case (macro: $valueComplexType):
@@ -65,6 +70,9 @@ class EntityBuilder {
 
                 var fieldName = v.name;
                 var fieldOptions:Array<EntityFieldOption> = v.entityFieldOptions();
+                if (fieldOptions.contains(Ignore)) {
+                    continue;
+                }
 
                 var complexType = TypeTools.toComplexType(Context.followWithAbstracts(ComplexTypeTools.toType(v.complexType)));
                 switch (complexType) {
