@@ -5,6 +5,8 @@ using StringTools;
 #if (!macro && (entities_as_externs || (modular && !modular_host)))
 
 extern class EntityFieldSetImpl {
+    var whitelist:Array<String>;
+    var blacklist:Array<String>;
     public function new(list:Array<String> = null);
     public function allow(field:String):Bool;
     public function mergeWith(other:EntityFieldSetImpl):Void;
