@@ -1,58 +1,25 @@
 package entities;
 
-using StringTools;
-
-#if (!macro && (entities_as_externs || (modular && !modular_host)))
-
-extern class EntityFieldSet {
-    public function new(list:Array<String> = null);
-    public function allow(field:String):Bool;
-}
-
-#else
-
-@:keep @:expose
-class EntityFieldSet {
-    var whitelist:Array<String> = [];
-    var blacklist:Array<String> = [];
-    public function new(list:Array<String> = null) {
-        if (list != null) {
-            for (item in list) {
-                item = item.trim();
-                if (item.length == 0) {
-                    continue;
-                }
-
-                if (item.startsWith("!")) {
-                    blacklist.push(item.substring(1));
-                } else {
-                    whitelist.push(item);
-                }
-            }
-        }
+@:forward
+@:forward.new
+@:forward.variance
+@:forwardStatics
+abstract EntityFieldSet(EntityFieldSetImpl) from EntityFieldSetImpl to EntityFieldSetImpl {
+    @:op(a | b)
+    public function bitwiseOr(other:EntityFieldSet):EntityFieldSet {
+        this.mergeWith(other);
+        return this;
     }
 
-    public function allow(field:String):Bool {
-        if (whitelist.length == 0 && blacklist.length == 0) {
-            return true;
-        }
+    @:op(a & b)
+    public function bitwiseAnd(other:EntityFieldSet):EntityFieldSet {
+        this.mergeWith(other);
+        return this;
+    }
 
-        if (blacklist.length != 0) {
-            if (blacklist.contains(field)) {
-                return false;
-            }
-        }
-
-        if (whitelist.length != 0) {
-            if (whitelist.contains(field)) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        return true;
+    @:op(a + b)
+    public function add(other:EntityFieldSet):EntityFieldSet {
+        this.mergeWith(other);
+        return this;
     }
 }
-
-#end
