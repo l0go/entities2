@@ -64,7 +64,7 @@ class CodeBuilder {
             case EBlock(el):
                 switch (where) {
                     case Start:
-                        el.unshift(e);
+                        el.insert(0, e);
                     case End:
                         if (isLastLineReturn() == true) {
                             el.insert(el.length - 1, e);

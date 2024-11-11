@@ -31,7 +31,7 @@ class ClassVariableTools {
         return defaultValue;
     }
 
-    public static function entityFieldOptions(classVariable:ClassVariable):Array<EntityFieldOption> {
+    public static function entityFieldOptions(classVariable:entities.macros.helpers.ClassField):Array<EntityFieldOption> {
         var fieldOptions:Array<EntityFieldOption> = [];
         if (classVariable.metadata.contains(EntityMetadata.PrimaryKey)) {
             fieldOptions.push(EntityFieldOption.PrimaryKey);

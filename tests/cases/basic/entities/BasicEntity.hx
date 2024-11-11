@@ -48,4 +48,24 @@ class BasicEntity implements IEntity {
     public var limitedStringValue:String;
     @:size(20)
     public var limitedStringValueNoTruncate:String;
+
+    @:ignore var _primitiveProperty:Int;
+    public var primitiveProperty(get, set):Int;
+    private function get_primitiveProperty():Int {
+        return _primitiveProperty;
+    }
+    private function set_primitiveProperty(value:Int):Int {
+        _primitiveProperty = value;
+        return value;
+    }
+
+    @:ignore var _entityProperty:BasicEntity;
+    public var entityProperty(get, set):BasicEntity;
+    private function get_entityProperty():BasicEntity {
+        return _entityProperty;
+    }
+    private function set_entityProperty(value:BasicEntity):BasicEntity {
+        _entityProperty = value;
+        return value;
+    }
 }

@@ -151,6 +151,39 @@ class ClassBuilder {
     }
 
 
+    public var varsAndProps(get, null):Array<entities.macros.helpers.ClassField>;
+    private function get_varsAndProps():Array<entities.macros.helpers.ClassField> {
+        var list:Array<entities.macros.helpers.ClassField> = [];
+        if (fields != null) {
+            for (f in fields) {
+                switch (f.kind) {
+                    case FVar(t, e):
+                        var classVariable = new ClassVariable(this);
+                        classVariable.field = f;
+                        classVariable.staticField = f.access.contains(AStatic);
+                        list.push(classVariable);
+                    case FProp(get, set, t, e):  
+                        var classProperty = new ClassProperty(this);
+                        classProperty.field = f;
+                        classProperty.staticField = f.access.contains(AStatic);
+                        list.push(classProperty);
+                    case _:    
+                }
+            }
+        } else if (classFields != null) {
+            for (f in classFields) {
+                switch (f.kind) {
+                    case FVar(read, write):
+                        var classVariable = new ClassVariable(this);
+                        classVariable.classField = f;
+                        list.push(classVariable);
+                    case _:    
+                }
+            }
+        }
+        return list;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // VARS
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,6 +289,14 @@ class ClassBuilder {
         return classVariable;
     }
 
+    public function findOrCreateVar(name:String, type:Null<ComplexType> = null, expr:Expr = null, access:Array<Access> = null, index:Null<Int> = null):ClassVariable {
+        var classVariable = findVar(name);
+        if (classVariable != null) {
+            return classVariable;
+        }
+        return addVar(name, type, expr, access, index);
+    }
+
     public function addStaticVar(name:String, type:Null<ComplexType> = null, expr:Expr = null, access:Array<Access> = null, index:Null<Int> = null):ClassVariable {
         if (access == null) {
             access = [];
@@ -345,6 +386,14 @@ class ClassBuilder {
         var classProp = new ClassProperty(this, field);
         return classProp;
 
+    }
+
+    public function findOrCreateProperty(name:String, type:Null<ComplexType> = null, access:Array<Access> = null, index:Null<Int> = null, get:String = null, set:String = null):ClassProperty {
+        var classProperty = findProp(name);
+        if (classProperty != null) {
+            return classProperty;
+        }
+        return addProp(name, type, access, index, get, set);
     }
 
     public function hasPropGetter(name:String, lookInSuperClasses:Bool = false):Bool {

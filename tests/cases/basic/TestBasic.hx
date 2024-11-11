@@ -94,6 +94,71 @@ class TestBasic extends TestBase {
         });
     }
 
+    function testBasic_Primitives_Properties(async:Async) {
+        var entity1 = createEntity("this is a string value for entity #1", 123, 456.789, true, new Date(2000, 2, 3, 4, 5, 6));
+        entity1.primitiveProperty = 123456;
+        entity1.entityProperty = new BasicEntity();
+        entity1.entityProperty.primitiveProperty = 654321;
+
+        profileStart("testBasic_Primitives");
+        measureStart("add()");
+        entity1.add().then(entity -> {
+            measureEnd("add()");
+
+            Assert.equals(2, entity.basicEntityId);
+            Assert.equals("this is a string value for entity #1", entity.stringValue);
+            Assert.equals(123, entity.intValue);
+            Assert.equals(456.789, entity.floatValue);
+            Assert.equals(true, entity.boolValue);
+            Assert.equals(new Date(2000, 2, 3, 4, 5, 6).toString(), entity1.dateValue.toString());
+
+            measureStart("findById()");
+            return BasicEntity.findById(2);
+        }).then(entity -> {
+            measureEnd("findById()");
+
+            Assert.equals(2, entity.basicEntityId);
+            Assert.equals("this is a string value for entity #1", entity.stringValue);
+            Assert.equals(123, entity.intValue);
+            Assert.equals(456.789, entity.floatValue);
+            Assert.equals(true, entity.boolValue);
+            Assert.equals(new Date(2000, 2, 3, 4, 5, 6).toString(), entity.dateValue.toString());
+
+            entity.stringValue += " - addition";
+            entity.intValue *= 2;
+            entity.floatValue /= 2;
+            entity.boolValue = !entity.boolValue;
+            entity.dateValue = new Date(2001, 3, 4, 5, 6, 7);
+
+            measureStart("update()");
+            return entity.update();
+        }).then(entity -> {
+            measureEnd("update()");
+            Assert.equals(2, entity.basicEntityId);
+            Assert.equals("this is a string value for entity #1 - addition", entity.stringValue);
+            Assert.equals(246, entity.intValue);
+            Assert.equals(228.3945, entity.floatValue);
+            Assert.equals(false, entity.boolValue);
+            Assert.equals(new Date(2001, 3, 4, 5, 6, 7).toString(), entity.dateValue.toString());
+
+            measureStart("findById()");
+            return BasicEntity.findById(2);
+        }).then(entity -> {
+            measureEnd("findById()");
+            Assert.equals(2, entity.basicEntityId);
+            Assert.equals("this is a string value for entity #1 - addition", entity.stringValue);
+            Assert.equals(246, entity.intValue);
+            Assert.equals(228.3945, entity.floatValue);
+            Assert.equals(false, entity.boolValue);
+
+            Assert.equals(new Date(2001, 3, 4, 5, 6, 7).toString(), entity.dateValue.toString());
+            profileEnd();
+            async.done();
+        }, error -> {
+            trace("ERROR", error);
+        });
+    }
+
     function testBasic_PrimitiveArrays_String(async:Async) {
         var entity1 = createEntity("entity1");
         entity1.stringArray1 = ["string 1A", "string 1B", "string 1C"];

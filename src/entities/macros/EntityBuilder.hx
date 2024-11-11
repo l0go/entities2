@@ -5,6 +5,7 @@ package entities.macros;
 import db.TableSchema;
 import entities.macros.helpers.ClassBuilder;
 import entities.macros.helpers.ClassField;
+import entities.macros.helpers.ClassProperty;
 import haxe.macro.ComplexTypeTools;
 import haxe.macro.Context;
 import haxe.macro.Expr;
@@ -41,7 +42,7 @@ class EntityBuilder {
         //var entityComplexType = entityClass.toComplexType();
 
         if (entityClass.isExtern) {
-            for (v in entityClass.vars) {
+            for (v in entityClass.varsAndProps) {
                 if (v.isStatic) {
                     continue;
                 }
@@ -56,14 +57,14 @@ class EntityBuilder {
                     case (macro: $valueComplexType):
                         if (valueComplexType.isEntity()) {
                             v.remove();
-                            var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
-                            entityProp.addGetter().metadata.add(":noCompletion");
-                            entityProp.addSetter().metadata.add(":noCompletion");
+                            var entityProp = entityClass.findOrCreateProperty(v.name, v.complexType, v.access, "get", "set");
+                            entityProp.findOrCreateGetter().metadata.add(":noCompletion");
+                            entityProp.findOrCreateSetter().metadata.add(":noCompletion");
                         }
                 }
             }
         } else {
-            for (v in entityClass.vars) {
+            for (v in entityClass.varsAndProps) {
                 if (v.isStatic) {
                     continue;
                 }
@@ -77,25 +78,35 @@ class EntityBuilder {
                 var complexType = TypeTools.toComplexType(Context.followWithAbstracts(ComplexTypeTools.toType(v.complexType)));
                 switch (complexType) {
                     case (macro: Bool)  | (macro: Null<Bool>)  | (macro: StdTypes.Bool):
-                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Boolean });
+                        if (!(v is ClassProperty)) { // we'll only allow primitives to be var, and will assume properties are helpers (may be ill conceived)
+                            entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Boolean });
+                        }
                     case (macro: Int)   | (macro: Null<Int>)   | (macro: StdTypes.Int):
-                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Number });
+                        if (!(v is ClassProperty)) { // we'll only allow primitives to be var, and will assume properties are helpers (may be ill conceived)
+                            entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Number });
+                        }
                     case (macro: Float) | (macro: Null<Float>) | (macro: StdTypes.Float):
-                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
+                        if (!(v is ClassProperty)) { // we'll only allow primitives to be var, and will assume properties are helpers (may be ill conceived)
+                            entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Decimal });
+                        }
                     case (macro: String):
-                        var size = v.metadata.paramAsInt(EntityMetadata.Size);
-                        if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
-                            size = EntityManager.DefaultFieldSize;
+                        if (!(v is ClassProperty)) { // we'll only allow primitives to be var, and will assume properties are helpers (may be ill conceived)
+                            var size = v.metadata.paramAsInt(EntityMetadata.Size);
+                            if (size == null) { // if no @:size meta is present, we'll default to -1, which for strings will mean a memo db column (unlimited size)
+                                size = EntityManager.DefaultFieldSize;
+                            }
+                            var sizeTruncateString = v.metadata.paramAsString("size", 1);
+                            if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.Truncate && !fieldOptions.contains(EntityFieldOption.TruncateToSize)) {
+                                fieldOptions.push(EntityFieldOption.TruncateToSize);
+                            } else if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.NoTruncate) {
+                                fieldOptions.remove(EntityFieldOption.TruncateToSize);
+                            }
+                            entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text(size) });
                         }
-                        var sizeTruncateString = v.metadata.paramAsString("size", 1);
-                        if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.Truncate && !fieldOptions.contains(EntityFieldOption.TruncateToSize)) {
-                            fieldOptions.push(EntityFieldOption.TruncateToSize);
-                        } else if (sizeTruncateString != null && sizeTruncateString.toLowerCase() == EntityMetadata.NoTruncate) {
-                            fieldOptions.remove(EntityFieldOption.TruncateToSize);
-                        }
-                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Text(size) });
                     case (macro: Date):
-                        entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Date });
+                        if (!(v is ClassProperty)) { // we'll only allow primitives to be var, and will assume properties are helpers (may be ill conceived)
+                            entityDefinition.fields.push({ name: fieldName, options: fieldOptions, type: EntityFieldType.Date });
+                        }
                     case (macro: Array<$valueComplexType>):
                         if (valueComplexType.isEntity()) {
                             var entityValueClass = new ClassBuilder(valueComplexType.toType());
@@ -160,28 +171,47 @@ class EntityBuilder {
                     case (macro: Map<$keyComplexType, $valueComplexType>):
                     case (macro: $valueComplexType):
                         if (valueComplexType.isEntity()) {
-                            if (v.metadata.contains(EntityMetadata.Cascade)) {
-                                /* MAY NEED THIS STILL
-                                var entityPrevRefVarName = "_" + v.name + "PrevRef";
-                                var entityComplexType = v.complexType;
-                                var entityPrevRefsVar = entityClass.addVar(entityPrevRefVarName, macro: $entityComplexType, macro null, [APrivate]);
-                                */
+                            v.remove();
+                            var hadExistingSetter = entityClass.hasPropSetter(v.name);
+                            var entityVarName = "_" + v.name;
+                            var entityVar = entityClass.findOrCreateVar(entityVarName, v.complexType, v.access);
+                            var entityProp = entityClass.findOrCreateProperty(v.name, v.complexType, v.access, "get", "set");
+                            var entityGetter = entityProp.findOrCreateGetter();
+                            var entitySetter = entityProp.findOrCreateSetter();
 
-                                v.remove();
-                                var entityVarName = "_" + v.name;
-                                var entityVar = entityClass.addVar(entityVarName, v.complexType, v.access);
-                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
-                                entityProp.addGetter(macro {
-                                    return $i{entityVarName};
-                                });
-                                entityProp.addSetter(macro @:privateAccess {
-                                    /* MAY NEED THIS STILL
-                                    if ($i{entityPrevRefVarName} == null && $i{entityVarName} != null && $i{entityVarName} != value) {
-                                        $i{entityPrevRefVarName} = $i{entityVarName};
-                                    }
-                                    @:privateAccess $i{entityVarName}.copyFrom(value);
-                                    $i{entityVarName} = value;
-                                    */
+                            // this will remove any assignments in the original setter, so, for example
+                            // `_someVar = value` will be removed from the original expr since entities
+                            // wants to control that assignment
+                            var findAssignments = null;
+                            findAssignments = (expr) -> {
+                                return switch (expr.expr) {
+                                    case EBinop(OpAssign, e1, e2):
+                                        var removeExpr = switch (e1.expr) {
+                                            case EConst(CIdent(s)): (s == entityVarName || s == v.name);
+                                            case _:                 false;  
+                                        }
+                                        if (removeExpr) {
+                                            macro {};
+                                        } else {
+                                            ExprTools.map(expr, findAssignments);
+                                        }
+                                    case _:    
+                                        ExprTools.map(expr, findAssignments);
+                                }
+                            }
+                            entitySetter.expr = ExprTools.map(entitySetter.code.expr, findAssignments);
+
+                            entityGetter.code += macro {
+                                return $i{entityVarName};
+                            }
+
+                            // the only difference between these go generated code blocks in the "return value"
+                            // if the return existed on an existing setter, then it would effectively "cut off"
+                            // the rest of the code that already existed in the setter, it would be possible
+                            // to just add the duplicated code and then append an "return value" only but
+                            // at least for now, this is clearer
+                            if (hadExistingSetter) {
+                                entitySetter.code.add(macro @:privateAccess {
                                     if ($i{entityVarName} == null || value == null) {
                                         $i{entityVarName} = value;
                                     } else if (value.primaryKeyValue() != null && $i{entityVarName}.primaryKeyValue() != value.primaryKeyValue()) {
@@ -189,17 +219,10 @@ class EntityBuilder {
                                     } else {
                                         @:privateAccess $i{entityVarName}.copyFrom(value);
                                     }
-                                    return value;
-                                });
+                                    //return value;
+                                }, null, Start);
                             } else {
-                                v.remove();
-                                var entityVarName = "_" + v.name;
-                                var entityVar = entityClass.addVar(entityVarName, v.complexType, v.access);
-                                var entityProp = entityClass.addProp(v.name, v.complexType, v.access, "get", "set");
-                                entityProp.addGetter(macro {
-                                    return $i{entityVarName};
-                                });
-                                entityProp.addSetter(macro @:privateAccess {
+                                entitySetter.code.add(macro @:privateAccess {
                                     if ($i{entityVarName} == null || value == null) {
                                         $i{entityVarName} = value;
                                     } else if (value.primaryKeyValue() != null && $i{entityVarName}.primaryKeyValue() != value.primaryKeyValue()) {
@@ -208,7 +231,7 @@ class EntityBuilder {
                                         @:privateAccess $i{entityVarName}.copyFrom(value);
                                     }
                                     return value;
-                                });
+                                }, null, Start);
                             }
 
                             var entityValueClass = new ClassBuilder(valueComplexType.toType());

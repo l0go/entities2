@@ -41,6 +41,22 @@ class ClassProperty extends entities.macros.helpers.ClassField {
         }
         return builder.addFunction("set_" + this.name, [{name: "value", type: this.complexType}], expr, this.complexType, access);
     }
+
+    public function findOrCreateGetter():ClassFunction {
+        var classFunction = this.getter;
+        if (classFunction != null) {
+            return classFunction;
+        }
+        return addGetter();
+    }
+
+    public function findOrCreateSetter():ClassFunction {
+        var classFunction = this.setter;
+        if (classFunction != null) {
+            return classFunction;
+        }
+        return addSetter();
+    }
 }
 
 #end
