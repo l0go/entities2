@@ -348,9 +348,6 @@ class ClassBuilder {
             access = [];
         }
 
-        if (access == null) {
-            access = [];
-        }
         if (!access.contains(APublic) && !access.contains(APrivate)) {
             if (name.startsWith("_")) {
                 access.push(APrivate);
