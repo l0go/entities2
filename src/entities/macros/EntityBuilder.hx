@@ -846,7 +846,7 @@ class EntityBuilder {
                         var joinForeignKey = entityField.joinForeignKey();
                         var joinTableName = entityField.joinTableName();
                         macro {
-                            if ($i{fieldName} != null) {
+                            if ($i{fieldName} != null && entityInDB != null && entityInDB.$fieldName != null) {
                                 var idsInDB = entityInDB.$fieldName.map(item -> item.$foreignKey);
                                 if (idsInDB.length > 0) {
                                     var query = Query.query(Query.field($v{primaryKeyField}) = this.$primaryKeyField && Query.field($v{joinForeignKey}) in idsInDB);
