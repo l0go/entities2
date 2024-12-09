@@ -251,7 +251,7 @@ class EntityBuilder {
                                 )
                             });
                         } else {
-                            trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", complexType, Context.followWithAbstracts(ComplexTypeTools.toType(valueComplexType)));
+                            trace(">>>>>>>>>>>>>>>>>>>>>>>>>>>> its NOT an entity", entityClass.qualifiedName, fieldName, complexType, Context.followWithAbstracts(ComplexTypeTools.toType(valueComplexType)));
                         }
                 }
                 //Sys.println("entities    >    " + v.name);
