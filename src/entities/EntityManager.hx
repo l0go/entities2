@@ -331,7 +331,7 @@ class EntityManager {
             case Date:
                 return Date.fromString(value);
             case Decimal | Number:    
-                if (value == "nan") {
+                if (Std.string(value) == "nan") {
                     value = null;
                 }
             case _:    
