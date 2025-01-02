@@ -299,6 +299,7 @@ class EntityBuilder {
         buildFindById(entityClass, entityDefinition);
         buildFindAll(entityClass, entityDefinition);
         buildCount(entityClass, entityDefinition);
+        buildRefresh(entityClass, entityDefinition);
 
         return entityClass.fields;
     }
@@ -1145,7 +1146,6 @@ class EntityBuilder {
                     } else {
                         macro {
                             $i{entityVarName} = other.$entityVarName;
-
                         }
                     }}
                 }
@@ -1309,6 +1309,40 @@ class EntityBuilder {
                 });
             });
         }
+    }
+
+    static function buildRefresh(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+        var primaryKeyName = entityDefinition.primaryKeyFieldName;
+
+        var refreshFn = entityClass.addFunction("refresh", [
+            {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
+        ], macro: promises.Promise<$entityComplexType>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
+
+        refreshFn.code += macro @:privateAccess {
+            return new promises.Promise((resolve, reject) -> {
+                if (this.$primaryKeyName == null) {
+                    reject('no primary key value, cannot refresh entity data');
+                } else {
+                    init().then(_ -> {
+                        return findById(this.$primaryKeyName);
+                    }).then(foundEntity -> {
+                        if (foundEntity == null) {
+                            reject('could not refresh entity data, no entity found with id ' + this.$primaryKeyName);
+                        } else {
+                            this.copyFrom(foundEntity);
+                            resolve(this);
+                        }
+                    }, error -> {
+                        reject(error);
+                    });
+                }
+            });
+        }
+
     }
 }
 
