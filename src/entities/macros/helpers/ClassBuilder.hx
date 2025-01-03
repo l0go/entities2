@@ -413,6 +413,32 @@ class ClassBuilder {
     // FUNCTIONS
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public var functions(get, null):Array<ClassFunction>;
+    private function get_functions():Array<ClassFunction> {
+        var list = [];
+        if (fields != null) {
+            for (f in fields) {
+                switch (f.kind) {
+                    case FFun(_):
+                        var classFunction = new ClassFunction(this, f);
+                        list.push(classFunction);
+                    case _:    
+                }
+            }
+        } else if (classFields != null) {
+            for (f in classFields) {
+                switch (f.kind) {
+                    case FMethod(_):
+                        var classFunction = new ClassFunction(this);
+                        classFunction.classField = f;
+                        list.push(classFunction);
+                    case _:    
+                }
+            }
+        }
+        return list;
+    }
+
     public function removeFunction(name:String) {
         // TODO: might want to check if the field exists and is the right type - feels unimportant though - so just an alias for now for consistency
         removeField(name);

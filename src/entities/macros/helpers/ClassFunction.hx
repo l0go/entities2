@@ -42,6 +42,21 @@ class ClassFunction extends entities.macros.helpers.ClassField {
         return value;
     }
 
+    public var args(get, never):Array<FunctionArg>;
+    private function get_args():Array<FunctionArg> {
+        if (field == null) {
+            throw "must have field var";
+        }
+
+        return switch (field.kind) {
+            case FFun(f):
+                f.args;
+            case _:    
+                throw "not class variable";
+    
+        }
+    }
+
     public var code(get, set):CodeBuilderWrapper;
     private function get_code():CodeBuilderWrapper {
         if (this.expr == null) {

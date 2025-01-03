@@ -64,6 +64,7 @@ class EntityBuilder {
                 }
             }
         } else {
+            entityClass.substitutePrimaryKeysInQueryCalls();
             for (v in entityClass.varsAndProps) {
                 if (v.isStatic) {
                     continue;

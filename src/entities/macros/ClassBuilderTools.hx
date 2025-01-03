@@ -4,6 +4,12 @@ package entities.macros;
 
 import entities.macros.helpers.ClassBuilder;
 import entities.macros.helpers.ClassVariable;
+import haxe.macro.Expr;
+import haxe.macro.TypeTools;
+import haxe.macro.ComplexTypeTools;
+import haxe.macro.ExprTools;
+
+using StringTools;
 
 class ClassBuilderTools {
     public static function isEntity(classBuilder:ClassBuilder):Bool {
@@ -35,6 +41,57 @@ class ClassBuilderTools {
         }
 
         return null;
+    }
+
+    public static function substitutePrimaryKeysInQueryCalls(classBuilder:ClassBuilder) {
+        for (fn in classBuilder.functions) {
+            var isCandidate:Bool = false;
+            var replacements:Map<String, String> = [];
+            for (arg in fn.args) {
+                var typeString = ComplexTypeTools.toString(arg.type);
+                if (typeString.startsWith("Class<")) { // little hacky but we want to skip Class<T> type args
+                    continue;
+                }
+                if (!EntityComplexTypeTools.isEntity(arg.type)) {
+                    continue;
+                }
+                isCandidate = true;
+                var argType = new ClassBuilder(ComplexTypeTools.toType(arg.type));
+                var primaryKeyName = primaryKeyFieldName(argType);
+                replacements.set(arg.name, primaryKeyName);
+            }
+
+            if (!isCandidate) {
+                continue;
+            }
+
+            fn.expr = ExprTools.map(fn.expr, replacePrimaryKeysInQueryCalls.bind(_, replacements));
+        }
+    }
+
+    private static function replacePrimaryKeysInQueryCalls(e:Expr, replacements:Map<String, String>):Expr {
+        return switch(e.expr) {
+            case ECall({ expr: EField({ expr: EConst(CIdent("Query")) }, "query", Normal)}, params):
+                ExprTools.map(e, handleReplacements.bind(_, replacements));   
+            case _:
+                ExprTools.map(e, replacePrimaryKeysInQueryCalls.bind(_, replacements));
+        }
+    }
+
+    private static function handleReplacements(e:Expr, replacements:Map<String, String>):Expr {
+        return switch(e.expr) {
+            case EField({ expr: EConst(CIdent(c)) }, f, Normal):    
+                e;
+            case EConst(CIdent(s)):
+                if (replacements.exists(s)) {
+                    var varName = s;
+                    var fieldName = replacements.get(s);
+                    return macro $i{varName}.$fieldName;
+                }
+                e;
+            case _:
+                ExprTools.map(e, handleReplacements.bind(_, replacements));
+        }
     }
 
     public static function primaryKeyFieldName(classBuilder:ClassBuilder):String {
