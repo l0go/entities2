@@ -93,6 +93,19 @@ class ClassField {
         return staticField;
     }
 
+    public var isProperty(get, null):Bool;
+    private function get_isProperty():Bool {
+        if (field != null) {
+            switch (field.kind) {
+                case FProp(get, set, t, e):    
+                    return true;
+                case _:    
+            }
+        }
+
+        return false;
+    }
+
     public var isPrivate(get, set):Bool;
     private function get_isPrivate():Bool {
         return access.contains(APrivate);
