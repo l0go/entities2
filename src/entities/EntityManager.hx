@@ -31,6 +31,7 @@ extern class EntityManager {
     private function generateQueryCachedId():String;
     private function clearQueryCache(cacheId:String):Void;
     private function find(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
+    private function findUnique(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
     private function count(tableName:String, query:QueryExpr):Promise<Int>;
     private function deleteAll(tableName:String, query:QueryExpr):Promise<Bool>;
     private function checkTableSchema(schema:TableSchema):Promise<Bool>;
@@ -242,6 +243,18 @@ class EntityManager {
         });
     }
 
+
+    private function findUnique(tableName:String, columnName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet> {
+        return new Promise((resolve, reject) -> {
+            lookupTable(tableName).then(table -> {
+                return table.findUnique(columnName, query);
+            }).then(result -> {
+                resolve(result.data);
+            }, error -> {
+                reject(error);
+            });
+        });
+    }
 
     private function count(tableName:String, query:QueryExpr):Promise<Int> {
         return new Promise((resolve, reject) -> {

@@ -294,12 +294,16 @@ class EntityBuilder {
 
         if (!entityClass.isExtern) {
             buildFindInternal(entityClass, entityDefinition);
+            buildFindUniqueInternal(entityClass, entityDefinition);
             buildCopyFrom(entityClass, entityDefinition);
         }
         buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
         buildFindAll(entityClass, entityDefinition);
         buildCount(entityClass, entityDefinition);
+
+        buildFindUnique(entityClass, entityDefinition);
+        
         buildRefresh(entityClass, entityDefinition);
 
         return entityClass.fields;
@@ -1205,6 +1209,38 @@ class EntityBuilder {
         }
     }
 
+    static function buildFindUniqueInternal(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+        var entityTypePath = entityClass.toTypePath();
+        var tableName = entityDefinition.tableName;
+
+        var findUniqueInternalFn = entityClass.addStaticFunction("findUniqueInternal", [
+            {name: "fieldName", type: macro: String},
+            {name: "query", type: macro: Query.QueryExpr},
+            {name: "queryCacheId", type: macro: String},
+            {name: "fieldSet", type: macro: entities.EntityFieldSet}
+        ], macro: promises.Promise<Array<$entityComplexType>>, [APrivate]);
+
+        findUniqueInternalFn.code += macro @:privateAccess {
+            return new promises.Promise((resolve, reject) -> {
+                init().then(_ -> {
+                    return entities.EntityManager.instance.findUnique($v{tableName}, fieldName, query, queryCacheId);
+                }).then(result -> {
+                    var promisesList:Array<() -> promises.Promise<$entityComplexType>> = [];
+                    for (record in result) {
+                        var entity = new $entityTypePath();
+                        promisesList.push(entity.fromRecord.bind(record, queryCacheId, fieldSet));
+                    }
+                    return promises.PromiseUtils.runSequentially(promisesList);
+                }).then(entities -> {
+                    resolve(entities);
+                }, error -> {
+                    reject(error);
+                });
+            });
+        }
+    }
+
     static function buildFindById(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
         var entityComplexType = entityClass.toComplexType();
 
@@ -1253,6 +1289,35 @@ class EntityBuilder {
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList[0]);
+                }, error -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    reject(error);
+                });
+            });
+        }
+    }
+
+    static function buildFindUnique(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+
+        var findUniqueFn = entityClass.addStaticFunction("findUnique", [
+            {name: "fieldName", type: macro: String},
+            {name: "query", type: macro: Query.QueryExpr, value: macro null},
+            {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
+        ], macro: promises.Promise<Array<$entityComplexType>>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
+
+        findUniqueFn.code += macro @:privateAccess {
+            var queryCacheId = entities.EntityManager.instance.generateQueryCachedId();
+            if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
+            return new promises.Promise((resolve, reject) -> {
+                init().then(_ -> {
+                    return findUniqueInternal(fieldName, query, queryCacheId, fieldSet);
+                }).then(entitiesList -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    resolve(entitiesList);
                 }, error -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     reject(error);
