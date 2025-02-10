@@ -243,6 +243,60 @@ class EntityManager {
         });
     }
 
+    private function findWithLimit(tableName:String, query:QueryExpr, maxResults:Int, cacheId:String = null):Promise<RecordSet> {
+        return new Promise((resolve, reject) -> {
+            #if entities_no_query_cache
+            cacheId = null;
+            #end
+            if (cacheId != null) {
+                var cache = _queryCache.get(cacheId);
+                var queryKey = tableName + "|" + Query.queryExprToSql(query) + "|" + maxResults;
+                if (cache != null && cache.exists(queryKey)) {
+                    _queryCacheHitCount++;
+                    resolve(cache.get(queryKey));
+                } else {
+                    lookupTable(tableName).then(table -> {
+                        return table.page(0, maxResults, query);
+                    }).then(result -> {
+                        if (cache == null) {
+                            cache = [];
+                            _queryCache.set(cacheId, cache);
+                        }
+
+                        cache.set(queryKey, result.data);
+                        if (query != null) {
+                        switch (query) {
+                                case QueryBinop(QOpIn, QueryValue(v1), QueryValue(v2)):
+                                    var field:String = cast v1;
+                                    field = field.replace("%", "");
+                                    var list:Array<Any> = cast v2;
+                                    for (l in list) {
+                                        var subQuery = Query.query(field = l);
+                                        var record = result.data.findRecord(field, l);
+                                        var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery) + "|" + maxResults;
+                                        var subResult = new RecordSet([record]);
+                                        cache.set(subCacheKey, subResult);
+                                    }
+                                case _:    
+                            }
+                        }
+
+                        resolve(result.data);
+                    }, error -> {
+                        reject(error);
+                    });
+                }
+            } else {
+                lookupTable(tableName).then(table -> {
+                    return table.page(0, maxResults, query);
+                }).then(result -> {
+                    resolve(result.data);
+                }, error -> {
+                    reject(error);
+                });
+            }
+        });
+    }
 
     private function findUnique(tableName:String, columnName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet> {
         return new Promise((resolve, reject) -> {

@@ -1186,12 +1186,16 @@ class EntityBuilder {
         var findInternalFn = entityClass.addStaticFunction("findInternal", [
             {name: "query", type: macro: Query.QueryExpr},
             {name: "queryCacheId", type: macro: String},
-            {name: "fieldSet", type: macro: entities.EntityFieldSet}
+            {name: "fieldSet", type: macro: entities.EntityFieldSet},
+            {name: "maxResults", type: macro: Null<Int>, value: macro null}
         ], macro: promises.Promise<Array<$entityComplexType>>, [APrivate]);
 
         findInternalFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
+                    if (maxResults != null) {
+                        return entities.EntityManager.instance.findWithLimit($v{tableName}, query, maxResults, queryCacheId);
+                    }
                     return entities.EntityManager.instance.find($v{tableName}, query, queryCacheId);
                 }).then(result -> {
                     var promisesList:Array<() -> promises.Promise<$entityComplexType>> = [];
@@ -1257,7 +1261,7 @@ class EntityBuilder {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    return findInternal(primaryKeyQuery(id), queryCacheId, fieldSet);
+                    return findInternal(primaryKeyQuery(id), queryCacheId, fieldSet, 1);
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList[0]);
@@ -1285,7 +1289,7 @@ class EntityBuilder {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    return findInternal(query, queryCacheId, fieldSet);
+                    return findInternal(query, queryCacheId, fieldSet, 1);
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList[0]);
@@ -1331,6 +1335,7 @@ class EntityBuilder {
 
         var findAllFn = entityClass.addStaticFunction("findAll", [
             {name: "query", type: macro: Query.QueryExpr, value: macro null},
+            {name: "maxResults", type: macro: Null<Int>, value: macro null},
             {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
         ], macro: promises.Promise<Array<$entityComplexType>>, [APublic]);
         if (entityClass.isExtern) {
@@ -1342,7 +1347,7 @@ class EntityBuilder {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    return findInternal(query, queryCacheId, fieldSet);
+                    return findInternal(query, queryCacheId, fieldSet, maxResults);
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList);
