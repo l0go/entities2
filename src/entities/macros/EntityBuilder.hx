@@ -1399,7 +1399,7 @@ class EntityBuilder {
                     reject('no primary key value, cannot refresh entity data');
                 } else {
                     init().then(_ -> {
-                        return findById(this.$primaryKeyName);
+                        return findById(this.$primaryKeyName, fieldSet);
                     }).then(foundEntity -> {
                         if (foundEntity == null) {
                             reject('could not refresh entity data, no entity found with id ' + this.$primaryKeyName);
