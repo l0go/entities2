@@ -5,6 +5,7 @@ abstract Timestamp(Float) to Float from Float {
 		return Date.now().getTime();
 	}
 
+	@:op(A + B) static function add(a:Timestamp, b:Timestamp):Timestamp;
 	@:op(A > B) static function gt(a:Timestamp, b:Timestamp):Bool;
 	@:op(B < A) static function lt(a:Timestamp, b:Timestamp):Bool;
 }
