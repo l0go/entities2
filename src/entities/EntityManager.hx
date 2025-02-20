@@ -31,7 +31,7 @@ extern class EntityManager {
     private function generateQueryCachedId():String;
     private function clearQueryCache(cacheId:String):Void;
     private function find(tableName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
-    private function findWithLimit(tableName:String, query:QueryExpr, maxResults:Int, cacheId:String = null):Promise<RecordSet>;
+    private function findPage(tableName:String, query:QueryExpr, pageIndex:Int, pageSize:Int, cacheId:String = null):Promise<RecordSet>;
     private function findUnique(tableName:String, columnName:String, query:QueryExpr, cacheId:String = null):Promise<RecordSet>;
     private function count(tableName:String, query:QueryExpr):Promise<Int>;
     private function deleteAll(tableName:String, query:QueryExpr):Promise<Bool>;
