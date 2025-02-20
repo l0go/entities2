@@ -299,6 +299,7 @@ class EntityBuilder {
         }
         buildFind(entityClass, entityDefinition);
         buildFindById(entityClass, entityDefinition);
+        buildFindByPage(entityClass, entityDefinition);
         buildFindAll(entityClass, entityDefinition);
         buildCount(entityClass, entityDefinition);
 
@@ -1187,14 +1188,19 @@ class EntityBuilder {
             {name: "query", type: macro: Query.QueryExpr},
             {name: "queryCacheId", type: macro: String},
             {name: "fieldSet", type: macro: entities.EntityFieldSet},
-            {name: "maxResults", type: macro: Null<Int>, value: macro null}
+            {name: "pageIndex", type: macro: Null<Int>, value: macro null},
+            {name: "pageSize", type: macro: Null<Int>, value: macro null}
         ], macro: promises.Promise<Array<$entityComplexType>>, [APrivate]);
 
         findInternalFn.code += macro @:privateAccess {
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    if (maxResults != null) {
-                        return entities.EntityManager.instance.findWithLimit($v{tableName}, query, maxResults, queryCacheId);
+                    if (pageSize != null) {
+                        var finalPageIndex = 0;
+                        if (pageIndex != null) {
+                            finalPageIndex = pageIndex;
+                        }
+                        return entities.EntityManager.instance.findPage($v{tableName}, query, finalPageIndex, pageSize, queryCacheId);
                     }
                     return entities.EntityManager.instance.find($v{tableName}, query, queryCacheId);
                 }).then(result -> {
@@ -1265,6 +1271,36 @@ class EntityBuilder {
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList[0]);
+                }, error -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    reject(error);
+                });
+            });
+        }
+    }
+
+    static function buildFindByPage(entityClass:ClassBuilder, entityDefinition:EntityDefinition) {
+        var entityComplexType = entityClass.toComplexType();
+
+        var findByPageFn = entityClass.addStaticFunction("findByPage", [
+            {name: "query", type: macro: Query.QueryExpr, value: macro null},
+            {name: "pageIndex", type: macro: Null<Int>, value: macro 0},
+            {name: "pageSize", type: macro: Null<Int>, value: macro 10},
+            {name: "fieldSet", type: macro: entities.EntityFieldSet, value: macro null}
+        ], macro: promises.Promise<Array<$entityComplexType>>, [APublic]);
+        if (entityClass.isExtern) {
+            return;
+        }
+
+        findByPageFn.code += macro @:privateAccess {
+            var queryCacheId = entities.EntityManager.instance.generateQueryCachedId();
+            if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
+            return new promises.Promise((resolve, reject) -> {
+                init().then(_ -> {
+                    return findInternal(query, queryCacheId, fieldSet, pageIndex, pageSize);
+                }).then(entitiesList -> {
+                    entities.EntityManager.instance.clearQueryCache(queryCacheId);
+                    resolve(entitiesList);
                 }, error -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     reject(error);
@@ -1347,7 +1383,7 @@ class EntityBuilder {
             if (fieldSet == null) fieldSet = new entities.EntityFieldSet();
             return new promises.Promise((resolve, reject) -> {
                 init().then(_ -> {
-                    return findInternal(query, queryCacheId, fieldSet, maxResults);
+                    return findInternal(query, queryCacheId, fieldSet, null, maxResults);
                 }).then(entitiesList -> {
                     entities.EntityManager.instance.clearQueryCache(queryCacheId);
                     resolve(entitiesList);

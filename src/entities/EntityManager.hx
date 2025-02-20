@@ -244,20 +244,20 @@ class EntityManager {
         });
     }
 
-    private function findWithLimit(tableName:String, query:QueryExpr, maxResults:Int, cacheId:String = null):Promise<RecordSet> {
+    private function findPage(tableName:String, query:QueryExpr, pageIndex:Int, pageSize:Int, cacheId:String = null):Promise<RecordSet> {
         return new Promise((resolve, reject) -> {
             #if entities_no_query_cache
             cacheId = null;
             #end
             if (cacheId != null) {
                 var cache = _queryCache.get(cacheId);
-                var queryKey = tableName + "|" + Query.queryExprToSql(query) + "|" + maxResults;
+                var queryKey = tableName + "|" + Query.queryExprToSql(query) + "|" + pageSize;
                 if (cache != null && cache.exists(queryKey)) {
                     _queryCacheHitCount++;
                     resolve(cache.get(queryKey));
                 } else {
                     lookupTable(tableName).then(table -> {
-                        return table.page(0, maxResults, query);
+                        return table.page(pageIndex, pageSize, query);
                     }).then(result -> {
                         if (cache == null) {
                             cache = [];
@@ -274,7 +274,7 @@ class EntityManager {
                                     for (l in list) {
                                         var subQuery = Query.query(field = l);
                                         var record = result.data.findRecord(field, l);
-                                        var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery) + "|" + maxResults;
+                                        var subCacheKey = tableName + "|" + Query.queryExprToSql(subQuery) + "|" + pageSize;
                                         var subResult = new RecordSet([record]);
                                         cache.set(subCacheKey, subResult);
                                     }
@@ -289,7 +289,7 @@ class EntityManager {
                 }
             } else {
                 lookupTable(tableName).then(table -> {
-                    return table.page(0, maxResults, query);
+                    return table.page(pageIndex, pageSize, query);
                 }).then(result -> {
                     resolve(result.data);
                 }, error -> {
