@@ -191,7 +191,11 @@ class TestOneToOne extends TestBase {
             Assert.equals("sub1_A1", addedMain.objectA2.subObjectName);
             return SubObjectA.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(1, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(1, objectCount);
+            #end
             async.done();
         }, error -> {
             trace("error", error);

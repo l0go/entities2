@@ -45,10 +45,18 @@ class TestOneToMany extends TestBase {
             addedMain = result;
             return MainObject.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(1, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(1, objectCount);
+            #end
             return SubObjectA.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(3, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(3, objectCount);
+            #end
             var newArray = [addedMain.arrayObjectA1[0], addedMain.arrayObjectA1[1], addedMain.arrayObjectA1[2]];
             addedMain.arrayObjectA1 = newArray;
             return addedMain.update();
@@ -71,13 +79,25 @@ class TestOneToMany extends TestBase {
             addedMain = result;
             return MainObject.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(1, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(1, objectCount);
+            #end
             return SubObjectA.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(1, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(1, objectCount);
+            #end
             return SubSubObjectX.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(3, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(3, objectCount);
+            #end
             var newArray = [addedMain.objectA1.arrayOfXs[0], addedMain.objectA1.arrayOfXs[1], addedMain.objectA1.arrayOfXs[2]];
             addedMain.objectA1.arrayOfXs = newArray;
             return addedMain.update();
@@ -101,7 +121,11 @@ class TestOneToMany extends TestBase {
             Assert.equals("sub1_A1", addedMain.arrayObjectA1[0].subObjectName);
             return SubObjectA.count();
         }).then(objectCount -> {
+            #if php
+            Assert.equals(1, Std.parseInt(Std.string(objectCount)));
+            #else
             Assert.equals(1, objectCount);
+            #end
             async.done();
         }, error -> {
             trace("error", error);
