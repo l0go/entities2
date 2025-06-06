@@ -68,4 +68,13 @@ class BasicEntity implements IEntity {
         _entityProperty = value;
         return value;
     }
+
+    @:ignore public var date:String;
+    @:ignore public var time:String;
+    public var timestamp(default, set):Timestamp;
+    function set_timestamp(value) {
+        date = DateTools.format(Date.fromTime(value), '%d/%m/%Y');
+        time = DateTools.format(Date.fromTime(value), '%H:%M:%S');
+        return timestamp = value;
+    }
 }

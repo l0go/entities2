@@ -48,6 +48,9 @@ class ClassBuilderTools {
             var isCandidate:Bool = false;
             var replacements:Map<String, String> = [];
             for (arg in fn.args) {
+                if (arg.type == null) {
+                    continue;
+                }
                 var typeString = ComplexTypeTools.toString(arg.type);
                 if (typeString.startsWith("Class<")) { // little hacky but we want to skip Class<T> type args
                     continue;
