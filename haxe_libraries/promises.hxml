@@ -1,0 +1,3 @@
+# @install: lix --silent download "gh://github.com/core-haxe/promises#427218cd1f633de43ac5fe163b34a618b6c0835f" into promises/0.0.0/github/427218cd1f633de43ac5fe163b34a618b6c0835f
+-cp ${HAXE_LIBCACHE}/promises/0.0.0/github/427218cd1f633de43ac5fe163b34a618b6c0835f/src
+-D promises=0.0.0
